@@ -1,9 +1,9 @@
-package test;
+package ca.uoit.eclipticon.test;
 
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
-import data.InstrumentationPoint;
+import ca.uoit.eclipticon.data.InstrumentationPoint;
 
 public class InstrumentationPointTest extends TestCase {
 	
