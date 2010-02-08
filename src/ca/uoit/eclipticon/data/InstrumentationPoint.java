@@ -1,142 +1,166 @@
 package ca.uoit.eclipticon.data;
-/***********************************************************************************************************
- ********************  ____  ____  _     _____  ____  _____  _____  ____  ____  ____  **********************
- ******************** |  __||  __|| |   |_   _||  . ||_   _||_   _||  __||    ||  | | **********************
- ******************** |  __|| |__ | |__  _| |_ |  __|  | |   _| |_ | |__ | || || || | **********************
- ******************** |____||____||____||_____||_|     |_|  |_____||____||____||_|__| **********************
- ******************** 													 **********************
- ***********************************************************************************************************
- * 																					  *
- * This class is a data class holding information pertaining to the Instrumentation Point.	  		  *
- * 																					  *
- * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc										       *
- *																					  *
- **********************************************************************************************************/
 
+/**
+ * This data class is used to hold information for an instrumentation point. A point
+ * will contain various pieces of information which details the location and type
+ * of instrumentation to be performed. This data is intended to be read and 
+ * written using the XStream serialization library.
+ * 
+ * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
+ */
 public class InstrumentationPoint {
 
 	// The Data
-	//---------
-	private int		_iId		= 0;	//A Numerical ID of the instrumentation point
-	private String		_sSource	= null;//The path to the Source File
-	private int		_iLine		= 0;	//The Line Number the Point is at
-	private int		_iChar		= 0;	//Number of Characters in to the line it is set.
-	private int		_iType		= 0;	//The Type of Instrumentation Point
-	private int		_iLow		= 0;	//The Low Value of the Instrumentation Point
-	private int		_iHigh		= 0;	//The High Value of the Instrumentation Point
-
-	// The SET and GET methods
-	//------------------------
+	private int		_id			= 0;	// A numerical ID of the instrumentation point
+	private String	_source		= null; // The path to the sourcefFile
+	private int		_line		= 0;	// The line number the point is located at
+	private int		_character	= 0;	// Number of characters in to the line it is set
+	private int		_type		= 0;	// The type of instrumentation point (0 = sleep, 1 = yield)
+	private int		_chance		= 0;	// The chance of an instrumentation point in activating out of 100
+	private int		_low		= 0;	// The low delay range of the instrumentation point
+	private int		_high		= 0;	// The high delay range of the instrumentation point
 
 	/**
-	 * @return the Character Position
-	 */
-	public int getChar() {
-		return _iChar;
-	}
-
-	/**
+	 * Gets the id of the instrumentation point.
 	 * 
-	 * @return the High value
-	 */
-	public int getHigh() {
-		return _iHigh;
-	}
-
-	/**
-	 * 
-	 * @return the ID of the instrumentation point
+	 * @return the id
 	 */
 	public int getId() {
-		return _iId;
+		return _id;
 	}
 
 	/**
+	 * Sets the id of the instrumentation point.
 	 * 
-	 * @return the Line number the instrumentation point is set at
+	 * @param id the id
 	 */
-	public int getLine() {
-		return _iLine;
+	public void setId( int id ) {
+		_id = id;
 	}
-	
+
 	/**
+	 * Gets the source file of the instrumentation point.
 	 * 
-	 * @return the Low value of the Instrumentation point
-	 */
-	public int getLow() {
-		return _iLow;
-	}
-	
-	/**
-	 * 
-	 * @return the path to the source file
+	 * @return the source
 	 */
 	public String getSource() {
-		return _sSource;
+		return _source;
 	}
 
 	/**
+	 * Sets the source file of the instrumentation point.
 	 * 
-	 * @return the type of instrumentation point
+	 * @param source the source
+	 */
+	public void setSource( String source ) {
+		_source = source;
+	}
+
+	/**
+	 * Gets the line number location of the of the instrumentation point.
+	 * 
+	 * @return the line
+	 */
+	public int getLine() {
+		return _line;
+	}
+
+	/**
+	 * Sets the line number location of the instrumentation point.
+	 * 
+	 * @param line the line
+	 */
+	public void setLine( int line ) {
+		_line = line;
+	}
+
+	/**
+	 * Gets the character number location of the instrumentation point.
+	 * 
+	 * @return the char
+	 */
+	public int getCharacter() {
+		return _character;
+	}
+
+	/**
+	 * Sets the character number location of the instrumentation point.
+	 * 
+	 * @param character the character
+	 */
+	public void setCharacter( int character ) {
+		_character = character;
+	}
+
+	/**
+	 * Gets the type of the instrumentation point.
+	 * 
+	 * @return the type
 	 */
 	public int getType() {
-		return _iType;
+		return _type;
 	}
 
 	/**
-	 * Sets the Character position the instrumentation point is located
-	 * @param iChar the position into the line the Instrumentation point will be set
+	 * Sets the type of the instrumentation point.
+	 * 
+	 * @param type the type
 	 */
-	public void setChar( int iChar ) {
-		_iChar = iChar;
+	public void setType( int type ) {
+		_type = type;
 	}
 
 	/**
-	 * Sets the High value of the instrumentation point
-	 * @param iHigh the high value of the instrumentation point
+	 * Gets the chance that this instrumentation point will activate during execution.
+	 * 
+	 * @return the chance
 	 */
-	public void setHigh( int iHigh ) {
-		_iHigh = iHigh;
+	public int getChance() {
+		return _chance;
 	}
 
 	/**
-	 * Sets the ID of the instrumentation point
-	 * @param iId the ID of the instrumentation point
+	 * Sets the chance that this instrumentation point will activate during execution.
+	 * 
+	 * @param chance the chance
 	 */
-	public void setId( int iId ) {
-		_iId = iId;
+	public void setChance( int chance ) {
+		_chance = chance;
 	}
 
 	/**
-	 * Sets the Low value of the instrumentation point
-	 * @param iLow the low value of the instrumentation point
-	 */	
-	public void setLow( int iLow ) {
-		_iLow = iLow;
-	}
-
-	/**
-	 * Sets the line the instrumentation point is on
-	 * @param iLine the line value the instrumentation point is on
-	 */	
-	public void setLine( int iLine ) {
-		_iLine = iLine;
-	}
-
-	/**
-	 * Sets the Source File path the instrumentation point is located in
-	 * @param sSource the path to the source file
+	 * Gets the low delay range of the instrumentation point.
+	 * 
+	 * @return the low
 	 */
-	public void setSource( String sSource ) {
-		_sSource = sSource;
-	}
-	
-	/**
-	 * Sets the Type of instrumentation point
-	 * @param iType the type of instrumentation point
-	 */
-	public void setType( int iType ) {
-		_iType = iType;
+	public int getLow() {
+		return _low;
 	}
 
+	/**
+	 * Sets the low delay range of the instrumentation point.
+	 * 
+	 * @param low the low
+	 */
+	public void setLow( int low ) {
+		_low = low;
+	}
+
+	/**
+	 * Gets the high delay range of the instrumentation point.
+	 * 
+	 * @return the high
+	 */
+	public int getHigh() {
+		return _high;
+	}
+
+	/**
+	 * Sets the high delay range of the instrumentation point.
+	 * 
+	 * @param high the high
+	 */
+	public void setHigh( int high ) {
+		_high = high;
+	}
 }

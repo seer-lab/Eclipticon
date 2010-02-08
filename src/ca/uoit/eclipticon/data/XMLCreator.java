@@ -1,43 +1,46 @@
 package ca.uoit.eclipticon.data;
-/***********************************************************************************************************
- ********************  ____  ____  _     _____  ____  _____  _____  ____  ____  ____  **********************
- ******************** |  __||  __|| |   |_   _||  . ||_   _||_   _||  __||    ||  | | **********************
- ******************** |  __|| |__ | |__  _| |_ |  __|  | |   _| |_ | |__ | || || || | **********************
- ******************** |____||____||____||_____||_|     |_|  |_____||____||____||_|__| **********************
- ******************** 													 **********************
- ***********************************************************************************************************
- * 																					  *
- * This class will perform the XML writing of the instrumentation points.		  					  *
- * 																					  *
- * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc										       *
- *																					  *
- **********************************************************************************************************/
 
 import java.io.FileNotFoundException;
 
+/**
+ * This class is used to create XML files for testing purposes, this class will
+ * eventually be @deprecated when the plugin is implemented.
+ * 
+ * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
+ */
 public class XMLCreator {
 
 	/**
-	 * @param args
+	 * This method will create an automatic configuration XML file and an
+	 * instrumentation points XML file all filled with dummy data. The instrument
+	 * points are tied to the test1.java and test2.java file.
+	 * 
+	 * @param args not used
 	 */
 	public static void main( String[] args ) {
-		InstrumentationDataHandler idhHandler = new InstrumentationDataHandler();
-		
-		idhHandler.addInstrumentationPoint( 0, "C:/Users/Cody/Workspaces/Capstone Workspace/eclipticon/test/test1.java", 36, 4, 1, 2, 10);
-		idhHandler.addInstrumentationPoint( 1, "C:/Users/Cody/Workspaces/Capstone Workspace/eclipticon/test/test1.java", 37, 5, 2, 23, 100);
-		idhHandler.addInstrumentationPoint( 2, "C:/Users/Cody/Workspaces/Capstone Workspace/eclipticon/test/test2.java", 36, 4, 2, 23, 100);
-		idhHandler.addInstrumentationPoint( 3, "C:/Users/Cody/Workspaces/Capstone Workspace/eclipticon/test/test2.java", 36, 25, 2, 23, 100);
 
+		// Creates an automatic configuration XML file
+		AutomaticConfigurationHandler autoHandler = new AutomaticConfigurationHandler();
 
-		idhHandler.setXmlLocation( "C:/Users/Cody/Workspaces/Capstone Workspace/eclipticon/test/instrpoint.xml" );
+		autoHandler.setConfigurationData( 0, 150, 25, 75, 65, 70, 45, 60, 10 );
+		autoHandler.setXmlLocation( "/home/jalbert/projects/eclipticon/test/autoconfig.xml" );
+
+		// Creates an instrumentation XML file
+		InstrumentationPointHandler idhHandler = new InstrumentationPointHandler();
+
+		idhHandler.addInstrumentationPoint( 0, "/home/jalbert/projects/eclipticon/test/test1.java", 36, 4, 0, 50, 2, 10 );
+		idhHandler.addInstrumentationPoint( 1, "/home/jalbert/projects/eclipticon/test/test1.java", 37, 5, 1, 50, 23, 100 );
+		idhHandler.addInstrumentationPoint( 2, "/home/jalbert/projects/eclipticon/test/test2.java", 36, 4, 1, 50, 23, 100 );
+		idhHandler.addInstrumentationPoint( 3, "/home/jalbert/projects/eclipticon/test/test2.java", 36, 25, 1, 50, 23, 100 );
+		idhHandler.setXmlLocation( "/home/jalbert/projects/eclipticon/test/instrpoint.xml" );
+
+		// Write the XML files
 		try {
 			idhHandler.writeXml();
-			
+			autoHandler.writeXml();
 		}
 		catch( FileNotFoundException e ) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-
 }
