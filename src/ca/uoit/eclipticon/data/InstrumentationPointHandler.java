@@ -19,6 +19,12 @@ public class InstrumentationPointHandler {
 	private String							_xmlLocation			= null; // The XML Location (Path)
 	private XStream							_xStream				= null; // The XML stream, to convert the collection to XML
 
+	public InstrumentationPointHandler() {
+		// When the plugin is running functionally this is the location our xml will be stored.
+		//_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "InstrumentaionPoints.XML";
+	}
+	
+	
 	/**
 	 * Add's a new instrumentation point to the collection.
 	 * 
@@ -80,10 +86,10 @@ public class InstrumentationPointHandler {
 	/**
 	 * Sets the Path of the XML file.
 	 * 
-	 * @param sXmlLocation the new location of the XML files
+	 * @param xmlLocation the new location of the XML files
 	 */
-	public void setXmlLocation( String sXmlLocation ) {
-		_xmlLocation = sXmlLocation;
+	public void setXmlLocation( String xmlLocation ) {
+		_xmlLocation = xmlLocation;
 	}
 
 	/**
