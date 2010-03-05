@@ -1,10 +1,23 @@
 package ca.uoit.eclipticon.data;
 
-import java.io.FileInputStream;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 
-import com.thoughtworks.xstream.XStream;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import ca.uoit.eclipticon.gui.Activator;
 
 /**
  * This class is used to handle the {@link AutomaticConfiguration} data class by
@@ -17,8 +30,12 @@ public class AutomaticConfigurationHandler {
 
 	private AutomaticConfiguration	_configurationData	= null; // The configuration data for automatic configuration
 	private String					_xmlLocation		= null; // The XML Location (Path)
-	private XStream					_xStream			= null; // The XML stream, to convert the object to and from XML
 
+	public AutomaticConfigurationHandler() {
+		// When the plugin is running functionally this is the location our xml will be stored.
+		_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "AutomaticConfig.XML";
+		
+	}
 	/**
 	 * Sets the configuration data for the automatic instrumentation.
 	 * 
@@ -57,31 +74,66 @@ public class AutomaticConfigurationHandler {
 	 * @throws FileNotFoundException
 	 */
 	public void readXml() throws FileNotFoundException {
+		// If the configuration data object is not initialized then do it now
+		if( _configurationData == null ) {
+			_configurationData = new AutomaticConfiguration();
+		}
+		// Open a new file at the plugin location
+		// TODO: Handle file not found.
+		File file = new File( _xmlLocation );
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		DocumentBuilder db;
+		try {
+			db = dbf.newDocumentBuilder();
+			Document doc = db.parse( file );
+			doc.getDocumentElement().normalize();
 
-		// Stuff to ensure the XML file is readable
-		_xStream = new XStream();
-		_xStream.aliasField( "lowDelayRange", AutomaticConfiguration.class, "_lowDelayRange" );
-		_xStream.aliasField( "highDelayRange", AutomaticConfiguration.class, "_highDelayRange" );
-		_xStream.aliasField( "sleepChance", AutomaticConfiguration.class, "_sleepChance" );
-		_xStream.aliasField( "yieldChance", AutomaticConfiguration.class, "_yieldChance" );
-		_xStream.aliasField( "instrumentChance", AutomaticConfiguration.class, "_instrumentChance" );
-		_xStream.aliasField( "synchronizeChance", AutomaticConfiguration.class, "_synchronizeChance" );
-		_xStream.aliasField( "barrierChance", AutomaticConfiguration.class, "_barrierChance" );
-		_xStream.aliasField( "latchChance", AutomaticConfiguration.class, "_latchChance" );
-		_xStream.aliasField( "semaphoreChance", AutomaticConfiguration.class, "_semaphoreChance" );
+			//Get a list of Instrumentation Points
+			NodeList automicaticConfigTopNode = doc.getElementsByTagName( "AutomaticConfig" );
 
-		// Read the XML file
-		FileInputStream inFileStream = new FileInputStream( _xmlLocation );
-		_configurationData = (AutomaticConfiguration)_xStream.fromXML( inFileStream );
+			Node currentNode = automicaticConfigTopNode.item( 0 );
+			// Read in the values for the current Instrumentaion Point
+			if( currentNode.getNodeType() == Node.ELEMENT_NODE ) {
+
+				Element autoConfigElement = (Element)currentNode;
+				_configurationData.setBarrierChance( Integer.valueOf( getNodeValue( autoConfigElement, "barrierChance" ) ) );
+				_configurationData.setLowDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "lowDelayRange" ) ) );
+				_configurationData.setHighDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "highDelayRange" ) ) );
+				_configurationData.setSleepChance( Integer.valueOf( getNodeValue( autoConfigElement, "sleepChance" ) ) );
+				_configurationData.setYieldChance( Integer.valueOf( getNodeValue( autoConfigElement, "yieldChance" ) ) );
+				_configurationData.setInstrumentChance( Integer.valueOf( getNodeValue( autoConfigElement, "instrumentChance" ) ) );
+				_configurationData.setSynchronizeChance( Integer.valueOf( getNodeValue( autoConfigElement, "synchronizeChance" ) ) );
+				_configurationData.setLatchChance( Integer.valueOf( getNodeValue( autoConfigElement, "latchChance" ) ) );
+				_configurationData.setSemaphoreChance( Integer.valueOf( getNodeValue( autoConfigElement, "semaphoreChance" ) ) );
+			}
+
+		}
+		catch( ParserConfigurationException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch( SAXException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch( IOException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	/**
-	 * Sets the path of the XML file.
-	 * 
-	 * @param xmlLocation the new location of the XML files
+	 * Get the value of the tag given, from within the  Automatic Conifguration given
+	 * @param autoConfigElement
+	 * @param strTag
+	 * @return
 	 */
-	public void setXmlLocation( String xmlLocation ) {
-		_xmlLocation = xmlLocation;
+	private String getNodeValue( Element autoConfigElement, String strTag ) {
+		NodeList nodeList = autoConfigElement.getElementsByTagName( strTag );
+		Element idElement = (Element)nodeList.item( 0 );
+		NodeList node = idElement.getChildNodes();
+		return node.item( 0 ).getNodeValue();
 	}
 
 	/**
@@ -89,26 +141,62 @@ public class AutomaticConfigurationHandler {
 	 * 
 	 * @throws FileNotFoundException
 	 */
-	public void writeXml() throws FileNotFoundException {
+	public void writeXml() throws IOException {
 
 		if( _configurationData != null ) {
+			// Compile the XML for the Instrumentation Points
+			String xml = "<list>\n";
 
-			// Stuff to ensure the XML file is readable
-			_xStream = new XStream();
-			_xStream.aliasField( "lowDelayRange", AutomaticConfiguration.class, "_lowDelayRange" );
-			_xStream.aliasField( "highDelayRange", AutomaticConfiguration.class, "_highDelayRange" );
-			_xStream.aliasField( "sleepChance", AutomaticConfiguration.class, "_sleepChance" );
-			_xStream.aliasField( "yieldChance", AutomaticConfiguration.class, "_yieldChance" );
-			_xStream.aliasField( "instrumentChance", AutomaticConfiguration.class, "_instrumentChance" );
-			_xStream.aliasField( "synchronizeChance", AutomaticConfiguration.class, "_synchronizeChance" );
-			_xStream.aliasField( "barrierChance", AutomaticConfiguration.class, "_barrierChance" );
-			_xStream.aliasField( "latchChance", AutomaticConfiguration.class, "_latchChance" );
-			_xStream.aliasField( "semaphoreChance", AutomaticConfiguration.class, "_semaphoreChance" );
+			xml = xml.concat( "<AutomaticConfig>\n\r" );
+			xml = xml.concat( createElement( "barrierChance", _configurationData.getBarrierChance() ) );
+			xml = xml.concat( createElement( "lowDelayRange", _configurationData.getLowDelayRange() ) );
+			xml = xml.concat( createElement( "highDelayRange", _configurationData.getHighDelayRange() ) );
+			xml = xml.concat( createElement( "sleepChance", _configurationData.getSleepChance() ) );
+			xml = xml.concat( createElement( "yieldChance", _configurationData.getYieldChance() ) );
+			xml = xml.concat( createElement( "instrumentChance", _configurationData.getInstrumentChance() ) );
+			xml = xml.concat( createElement( "synchronizeChance", _configurationData.getSynchronizeChance() ) );
+			xml = xml.concat( createElement( "latchChance", _configurationData.getLatchChance() ) );
+			xml = xml.concat( createElement( "semaphoreChance", _configurationData.getSemaphoreChance() ) );
+			xml = xml.concat( "</AutomaticConfig>\n\r" );
 
-			// Write the XML file
-			FileOutputStream outFileStream = new FileOutputStream( _xmlLocation );
-			_xStream.toXML( _configurationData, outFileStream );
+			xml = xml.concat( "</list>" );
+			File newFile = new File( _xmlLocation );
+			// Create a new file if it doesn't exist
+
+			newFile.createNewFile();
+
+			Writer output = new BufferedWriter( new FileWriter( _xmlLocation ) );
+			try {
+				// Write to the file
+				output.write( xml );
+			}
+			finally {
+				output.close();
+			}
 		}
+
+	}
+
+	/**
+	 * Creates the XML tag and returns the String
+	 * @param tag
+	 * @param value
+	 * @return
+	 */
+	private String createElement( String tag, String value ) {
+		String markup = "<" + tag + ">" + value + "</" + tag + ">\n\r";
+		return markup;
+	}
+
+	/**
+	 * Creates the XML tag and returns the String
+	 * @param tag
+	 * @param value
+	 * @return
+	 */
+	private String createElement( String tag, int value ) {
+		String markup = createElement( tag, String.valueOf( value ) );
+		return markup;
 	}
 
 	/**

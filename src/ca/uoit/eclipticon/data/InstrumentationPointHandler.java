@@ -1,10 +1,24 @@
 package ca.uoit.eclipticon.data;
 
-import java.io.FileInputStream;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
-import com.thoughtworks.xstream.XStream;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import ca.uoit.eclipticon.gui.Activator;
 
 /**
  * This class is used to handle a collection of {@link InstrumentationPoint} by
@@ -16,15 +30,14 @@ import com.thoughtworks.xstream.XStream;
 public class InstrumentationPointHandler {
 
 	private ArrayList<InstrumentationPoint>	_instrumentationPoints	= null; // Collection of Instrumentation Points
-	private String							_xmlLocation			= null; // The XML Location (Path)
-	private XStream							_xStream				= null; // The XML stream, to convert the collection to XML
+	private String								_xmlLocation			= null; // The XML Location (Path)
+	
 
 	public InstrumentationPointHandler() {
 		// When the plugin is running functionally this is the location our xml will be stored.
-		//_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "InstrumentaionPoints.XML";
+		_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "InstrumentationPoints.XML";
 	}
-	
-	
+
 	/**
 	 * Add's a new instrumentation point to the collection.
 	 * 
@@ -39,7 +52,7 @@ public class InstrumentationPointHandler {
 	 */
 	public void addInstrumentationPoint( int id, String source, int line, int character, int type, int chance, int low, int high ) {
 
-		// If the collections isn't initialized, do it now
+		// If the collections aren't initialized, do it now
 		if( _instrumentationPoints == null ) {
 			_instrumentationPoints = new ArrayList<InstrumentationPoint>();
 		}
@@ -67,20 +80,70 @@ public class InstrumentationPointHandler {
 	@SuppressWarnings("unchecked")
 	public void readXml() throws FileNotFoundException {
 
-		// Stuff to ensure the XML file is readable
-		_xStream = new XStream();
-		_xStream.aliasField( "Id", InstrumentationPoint.class, "_id" );
-		_xStream.aliasField( "Source", InstrumentationPoint.class, "_source" );
-		_xStream.aliasField( "Line", InstrumentationPoint.class, "_line" );
-		_xStream.aliasField( "Character", InstrumentationPoint.class, "_character" );
-		_xStream.aliasField( "Type", InstrumentationPoint.class, "_type" );
-		_xStream.aliasField( "Chance", InstrumentationPoint.class, "_chance" );
-		_xStream.aliasField( "Low", InstrumentationPoint.class, "_low" );
-		_xStream.aliasField( "High", InstrumentationPoint.class, "_high" );
+		// If the collections aren't initialized, do it now
+		if( _instrumentationPoints == null ) {
+			_instrumentationPoints = new ArrayList<InstrumentationPoint>();
+		}
+		//TODO: Handle Re-Reading XML
 
-		// Read the XML file
-		FileInputStream inFileStream = new FileInputStream( _xmlLocation );
-		_instrumentationPoints = (ArrayList<InstrumentationPoint>)_xStream.fromXML( inFileStream );
+		// Open a new file at the plugin location
+		// TODO: Handle file not found.
+		File file = new File( _xmlLocation );
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		DocumentBuilder db;
+		try {
+			db = dbf.newDocumentBuilder();
+			Document doc = db.parse( file );
+			doc.getDocumentElement().normalize();
+
+			//Get a list of Instrumentation Points
+			NodeList instrPointList = doc.getElementsByTagName( "InstrumentationPoint" );
+
+			for( int s = 0; s < instrPointList.getLength(); s++ ) {
+
+				Node currentNode = instrPointList.item( s );
+				// Read in the values for the current Instrumentaion Point
+				if( currentNode.getNodeType() == Node.ELEMENT_NODE ) {
+					InstrumentationPoint newPoint = new InstrumentationPoint();
+					Element instrPointElement = (Element)currentNode;
+					newPoint.setId( Integer.valueOf( getNodeValue( instrPointElement, "Id" ) ) );
+					newPoint.setSource( getNodeValue( instrPointElement, "Source" ) );
+					newPoint.setLine( Integer.valueOf( getNodeValue( instrPointElement, "Line" ) ) );
+					newPoint.setCharacter( Integer.valueOf( getNodeValue( instrPointElement, "Character" ) ) );
+					newPoint.setType( Integer.valueOf( getNodeValue( instrPointElement, "Type" ) ) );
+					newPoint.setChance( Integer.valueOf( getNodeValue( instrPointElement, "Chance" ) ) );
+					newPoint.setLow( Integer.valueOf( getNodeValue( instrPointElement, "Low" ) ) );
+					newPoint.setHigh( Integer.valueOf( getNodeValue( instrPointElement, "High" ) ) );
+					_instrumentationPoints.add( newPoint );
+				}
+			}
+		}
+		catch( ParserConfigurationException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch( SAXException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch( IOException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
+	 * Get the value of the tag given, from within the Instrumentation Point given
+	 * @param instrPointElement
+	 * @param strTag
+	 * @return
+	 */
+	private String getNodeValue( Element instrPointElement, String strTag ) {
+		NodeList nodeList = instrPointElement.getElementsByTagName( strTag );
+		Element idElement = (Element)nodeList.item( 0 );
+		NodeList node = idElement.getChildNodes();
+		return node.item( 0 ).getNodeValue();
 	}
 
 	/**
@@ -89,33 +152,67 @@ public class InstrumentationPointHandler {
 	 * @param xmlLocation the new location of the XML files
 	 */
 	public void setXmlLocation( String xmlLocation ) {
-		_xmlLocation = xmlLocation;
+		//_xmlLocation = xmlLocation;
 	}
 
 	/**
 	 * Write what is in the collection to the XML file.
-	 * 
-	 * @throws FileNotFoundException
+	 * @throws IOException 
 	 */
-	public void writeXml() throws FileNotFoundException {
-
+	public void writeXml() throws IOException {
+		// Check to see if there's something to write
 		if( ( _instrumentationPoints != null ) && ( !_instrumentationPoints.isEmpty() ) ) {
+			// Compile the XML for the Instrumentation Points
+			String xml = "<list>\n";
+			for( InstrumentationPoint a : _instrumentationPoints ) {
+				xml = xml.concat( "<InstrumentationPoint>\n\r" );
+				xml = xml.concat( createElement( "Id", a.getId() ) );
+				xml = xml.concat( createElement( "Source", a.getSource() ) );
+				xml = xml.concat( createElement( "Line", a.getLine() ) );
+				xml = xml.concat( createElement( "Character", a.getCharacter() ) );
+				xml = xml.concat( createElement( "Type", a.getType() ) );
+				xml = xml.concat( createElement( "Chance", a.getChance() ) );
+				xml = xml.concat( createElement( "Low", a.getLow() ) );
+				xml = xml.concat( createElement( "High", a.getHigh() ) );
+				xml = xml.concat( "</InstrumentationPoint>\n\r" );
+			}
 
-			// Stuff to ensure the XML file is readable
-			_xStream = new XStream();
-			_xStream.aliasField( "Id", InstrumentationPoint.class, "_id" );
-			_xStream.aliasField( "Source", InstrumentationPoint.class, "_source" );
-			_xStream.aliasField( "Line", InstrumentationPoint.class, "_line" );
-			_xStream.aliasField( "Character", InstrumentationPoint.class, "_character" );
-			_xStream.aliasField( "Type", InstrumentationPoint.class, "_type" );
-			_xStream.aliasField( "Chance", InstrumentationPoint.class, "_chance" );
-			_xStream.aliasField( "Low", InstrumentationPoint.class, "_low" );
-			_xStream.aliasField( "High", InstrumentationPoint.class, "_high" );
-
-			// Write the XML file
-			FileOutputStream outFileStream = new FileOutputStream( _xmlLocation );
-			_xStream.toXML( _instrumentationPoints, outFileStream );
+			xml = xml.concat( "</list>" );
+			File newFile = new File( _xmlLocation );
+			// Create a new file if it doesn't exist
+			newFile.createNewFile();
+			Writer output = new BufferedWriter( new FileWriter( _xmlLocation ) );
+			try {
+				// Write to the file
+				output.write( xml );
+			}
+			finally {
+				output.close();
+			}
 		}
+
+	}
+
+	/**
+	 * Creates the XML tag and returns the String
+	 * @param tag
+	 * @param value
+	 * @return
+	 */
+	private String createElement( String tag, String value ) {
+		String markup = "<" + tag + ">" + value + "</" + tag + ">\n\r";
+		return markup;
+	}
+
+	/**
+	 * Creates the XML tag and returns the String
+	 * @param tag
+	 * @param value
+	 * @return
+	 */
+	private String createElement( String tag, int value ) {
+		String markup = createElement( tag, String.valueOf( value ) );
+		return markup;
 	}
 
 	/**

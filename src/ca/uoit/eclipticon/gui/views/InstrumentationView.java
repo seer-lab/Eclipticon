@@ -125,6 +125,7 @@ public class InstrumentationView extends ViewPart {
 
 		action2 = new Action() {
 			public void run() {
+				
 				showMessage( "Action 2 executed" );
 			}
 		};
