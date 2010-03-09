@@ -59,7 +59,7 @@ public class AutoInstrumentCreator {
 		try {
 			this._automaticPoints.writeXml();
 		}
-		catch( FileNotFoundException e ) {
+		catch( IOException e ) {
 			e.printStackTrace();
 		}
 
@@ -207,7 +207,6 @@ public class AutoInstrumentCreator {
 
 		// Read the automatic configuration file and acquire the configuration object
 		try {
-			configHandler.setXmlLocation( automaticConfig.getAbsolutePath() );
 			configHandler.readXml();
 		}
 		catch( FileNotFoundException e ) {

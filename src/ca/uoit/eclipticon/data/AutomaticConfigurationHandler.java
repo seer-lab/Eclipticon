@@ -34,7 +34,6 @@ public class AutomaticConfigurationHandler {
 	public AutomaticConfigurationHandler() {
 		// When the plugin is running functionally this is the location our xml will be stored.
 		_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "AutomaticConfig.XML";
-		
 	}
 	/**
 	 * Sets the configuration data for the automatic instrumentation.
@@ -98,15 +97,15 @@ public class AutomaticConfigurationHandler {
 			if( currentNode.getNodeType() == Node.ELEMENT_NODE ) {
 
 				Element autoConfigElement = (Element)currentNode;
-				_configurationData.setBarrierChance( Integer.valueOf( getNodeValue( autoConfigElement, "barrierChance" ) ) );
+				_configurationData.setBarrierProbability( Integer.valueOf( getNodeValue( autoConfigElement, "barrierProbability" ) ) );
 				_configurationData.setLowDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "lowDelayRange" ) ) );
 				_configurationData.setHighDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "highDelayRange" ) ) );
-				_configurationData.setSleepChance( Integer.valueOf( getNodeValue( autoConfigElement, "sleepChance" ) ) );
-				_configurationData.setYieldChance( Integer.valueOf( getNodeValue( autoConfigElement, "yieldChance" ) ) );
-				_configurationData.setInstrumentChance( Integer.valueOf( getNodeValue( autoConfigElement, "instrumentChance" ) ) );
-				_configurationData.setSynchronizeChance( Integer.valueOf( getNodeValue( autoConfigElement, "synchronizeChance" ) ) );
-				_configurationData.setLatchChance( Integer.valueOf( getNodeValue( autoConfigElement, "latchChance" ) ) );
-				_configurationData.setSemaphoreChance( Integer.valueOf( getNodeValue( autoConfigElement, "semaphoreChance" ) ) );
+				_configurationData.setSleepProbability( Integer.valueOf( getNodeValue( autoConfigElement, "sleepProbability" ) ) );
+				_configurationData.setYieldProbability( Integer.valueOf( getNodeValue( autoConfigElement, "yieldProbability" ) ) );
+				_configurationData.setInstrumentProbability( Integer.valueOf( getNodeValue( autoConfigElement, "instrumentProbability" ) ) );
+				_configurationData.setSynchronizeProbability( Integer.valueOf( getNodeValue( autoConfigElement, "synchronizeChance" ) ) );
+				_configurationData.setLatchProbability( Integer.valueOf( getNodeValue( autoConfigElement, "latchChance" ) ) );
+				_configurationData.setSemaphoreProbability( Integer.valueOf( getNodeValue( autoConfigElement, "semaphoreChance" ) ) );
 			}
 
 		}
@@ -150,15 +149,15 @@ public class AutomaticConfigurationHandler {
 			String xml = "<list>\n";
 
 			xml = xml.concat( "<AutomaticConfig>\n\r" );
-			xml = xml.concat( createElement( "barrierChance", _configurationData.getBarrierChance() ) );
+			xml = xml.concat( createElement( "barrierChance", _configurationData.getBarrierProbability() ) );
 			xml = xml.concat( createElement( "lowDelayRange", _configurationData.getLowDelayRange() ) );
 			xml = xml.concat( createElement( "highDelayRange", _configurationData.getHighDelayRange() ) );
-			xml = xml.concat( createElement( "sleepChance", _configurationData.getSleepChance() ) );
-			xml = xml.concat( createElement( "yieldChance", _configurationData.getYieldChance() ) );
-			xml = xml.concat( createElement( "instrumentChance", _configurationData.getInstrumentChance() ) );
-			xml = xml.concat( createElement( "synchronizeChance", _configurationData.getSynchronizeChance() ) );
-			xml = xml.concat( createElement( "latchChance", _configurationData.getLatchChance() ) );
-			xml = xml.concat( createElement( "semaphoreChance", _configurationData.getSemaphoreChance() ) );
+			xml = xml.concat( createElement( "sleepChance", _configurationData.getSleepProbability() ) );
+			xml = xml.concat( createElement( "yieldChance", _configurationData.getYieldProbability() ) );
+			xml = xml.concat( createElement( "instrumentChance", _configurationData.getInstrumentProbability() ) );
+			xml = xml.concat( createElement( "synchronizeChance", _configurationData.getSynchronizeProbability() ) );
+			xml = xml.concat( createElement( "latchChance", _configurationData.getLatchProbability() ) );
+			xml = xml.concat( createElement( "semaphoreChance", _configurationData.getSemaphoreProbability() ) );
 			xml = xml.concat( "</AutomaticConfig>\n\r" );
 
 			xml = xml.concat( "</list>" );

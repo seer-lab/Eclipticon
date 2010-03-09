@@ -494,13 +494,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * @param autoConfig
 	 */
 	public void populateAutoTab( AutomaticConfiguration autoConfig ) {
-		_sleepYield.setSelection( autoConfig.getYieldChance() );
+		_sleepYield.setSelection( autoConfig.getYieldProbability() );
 		_txtAutoLower.setText( String.valueOf( autoConfig.getLowDelayRange() ) );
 		_txtAutoHigher.setText( String.valueOf( autoConfig.getHighDelayRange() ) );
-		_scaleBarrier.setSelection( autoConfig.getBarrierChance() );
-		_scaleLatches.setSelection( autoConfig.getLatchChance() );
-		_scaleSemaphores.setSelection( autoConfig.getSemaphoreChance() );
-		_scaleSync.setSelection( autoConfig.getSynchronizeChance() );
+		_scaleBarrier.setSelection( autoConfig.getBarrierProbability() );
+		_scaleLatches.setSelection( autoConfig.getLatchProbability() );
+		_scaleSemaphores.setSelection( autoConfig.getSemaphoreProbability() );
+		_scaleSync.setSelection( autoConfig.getSynchronizeProbability() );
 	}
 	
 	/**
@@ -726,8 +726,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Yield Scale
 		else if( arg0.widget == _sleepYield ) {
 			// If it was moved set the flag
-			if( _sleepYield.getSelection() != _ach.getConfiguration().getYieldChance() ) {
-				_ach.getConfiguration().setYieldChance( _sleepYield.getSelection() );
+			if( _sleepYield.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setYieldProbability( _sleepYield.getSelection() );
 				_modified = true;
 			}
 		}
@@ -735,8 +735,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Barrier Scale
 		else if( arg0.widget == _scaleBarrier ) {
 			// If it was moved set the flag
-			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getYieldChance() ) {
-				_ach.getConfiguration().setBarrierChance( _scaleBarrier.getSelection() );
+			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setBarrierProbability( _scaleBarrier.getSelection() );
 				_modified = true;
 			}
 		}
@@ -744,8 +744,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Latch Scale
 		else if( arg0.widget == _scaleLatches ) {
 			// If it was moved set the flag
-			if( _scaleLatches.getSelection() != _ach.getConfiguration().getYieldChance() ) {
-				_ach.getConfiguration().setLatchChance( _scaleLatches.getSelection() );
+			if( _scaleLatches.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setLatchProbability( _scaleLatches.getSelection() );
 				_modified = true;
 			}
 		}
@@ -753,8 +753,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Semaphore Scale
 		else if( arg0.widget == _scaleSemaphores ) {
 			// If it was moved set the flag
-			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getYieldChance() ) {
-				_ach.getConfiguration().setSemaphoreChance( _scaleSemaphores.getSelection() );
+			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setSemaphoreProbability( _scaleSemaphores.getSelection() );
 				_modified = true;
 			}
 		}
@@ -762,8 +762,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Synchronization Scale
 		else if( arg0.widget == _scaleSync ) {
 			// If it was moved set the flag
-			if( _scaleSync.getSelection() != _ach.getConfiguration().getYieldChance() ) {
-				_ach.getConfiguration().setSynchronizeChance( _scaleSync.getSelection() );
+			if( _scaleSync.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setSynchronizeProbability( _scaleSync.getSelection() );
 				_modified = true;
 			}
 		}
