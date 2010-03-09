@@ -41,15 +41,17 @@ public class AutomaticConfigurationHandler {
 	 * 
 	 * @param lowDelayRange the low delay range
 	 * @param highDelayRange the high delay range
-	 * @param sleepChance the sleep chance
-	 * @param yieldChance the yield chance
-	 * @param instrumentChance the instrument chance
-	 * @param synchronizeChance the synchronize chance
-	 * @param barrierChance the barrier chance
-	 * @param latchChance the latch chance
-	 * @param semaphoreChance the semaphore chance
+	 * @param sleepProbability the sleep probability
+	 * @param yieldProbability the yield probability
+	 * @param instrumentProbability the instrument probability
+	 * @param synchronizeProbability the synchronize probability
+	 * @param barrierProbability the barrier probability
+	 * @param latchProbability the latch probability
+	 * @param semaphoreProbability the semaphore probability
 	 */
-	public void setConfigurationData( int lowDelayRange, int highDelayRange, int sleepChance, int yieldChance, int instrumentChance, int synchronizeChance, int barrierChance, int latchChance, int semaphoreChance ) {
+	public void setConfigurationData( int lowDelayRange, int highDelayRange, int sleepProbability,
+			int yieldProbability, int instrumentProbability, int synchronizeProbability, int barrierProbability,
+			int latchProbability, int semaphoreProbability ) {
 
 		// If the configuration data object is not initialized then do it now
 		if( _configurationData == null ) {
@@ -59,13 +61,13 @@ public class AutomaticConfigurationHandler {
 		// Sets the configuration data object with the selected values
 		_configurationData.setLowDelayRange( lowDelayRange );
 		_configurationData.setHighDelayRange( highDelayRange );
-		_configurationData.setSleepChance( sleepChance );
-		_configurationData.setYieldChance( yieldChance );
-		_configurationData.setInstrumentChance( instrumentChance );
-		_configurationData.setSynchronizeChance( synchronizeChance );
-		_configurationData.setBarrierChance( barrierChance );
-		_configurationData.setLatchChance( latchChance );
-		_configurationData.setSemaphoreChance( semaphoreChance );
+		_configurationData.setSleepProbability( sleepProbability );
+		_configurationData.setYieldProbability( yieldProbability );
+		_configurationData.setInstrumentProbability( instrumentProbability );
+		_configurationData.setSynchronizeProbability( synchronizeProbability );
+		_configurationData.setBarrierProbability( barrierProbability );
+		_configurationData.setLatchProbability( latchProbability );
+		_configurationData.setSemaphoreProbability( semaphoreProbability );
 	}
 
 	/**
