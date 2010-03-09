@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
-import java.util.Random;
 
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 
@@ -21,74 +20,9 @@ import ca.uoit.eclipticon.data.InstrumentationPoint;
  */
 public class Instrumentor {
 
-	private final int	BUFFER_SIZE	= 127;	// A common buffer size for character I/O
-
-	/**
-	 * Method will create a noise statement given the noise type and delay ranges.
-	 * 
-	 * @param type the noise type
-	 * @param chance the chance of this noise activating out of 100
-	 * @param low the lower bound of the sleep delay
-	 * @param high the upper bound of the sleep delay
-	 * @return the noise statement
-	 */
-	public String makeNoise( int chance, int type, int low, int high ) {
-
-		String noise = null;
-
-		// Based on the type form a noise statement using type and delay ranges
-		switch( type ){
-			case 0: // Type 0 = sleep
-				noise = getIfChance( chance ) + createSleep( low, high );
-				break;
-			case 1: // Type 1 = yield
-				noise = getIfChance( chance ) + createYield();
-				break;
-		}
-
-		// Returns the noise statement
-		return noise;
-	}
-
-	/**
-	 * This method will create the sleep instrumentation statement by using the
-	 * delay ranges, it also includes the appropriate try/catch syntax.
-	 * 
-	 * @param low the low bound of the sleep delay
-	 * @param high the high bound of the sleep delay
-	 * @return the sleep statement
-	 */
-	private String createSleep( int low, int high ) {
-
-		Random rand = new Random();
-
-		return "try {Thread.sleep(" + ( rand.nextInt( high - low ) + low ) + ");} catch (Exception e) {};";
-	}
-
-	/**
-	 * This method will create the yield instrumentation statement,
-	 * it also includes the appropriate try/catch syntax.
-	 * 
-	 * @return the yield statement
-	 */
-	private String createYield() {
-		return "try {Thread.yield(" + ");} catch (Exception e) {};";
-	}
-
-	/**
-	 * This method will create the if statement that controls the chance (out of
-	 * 100) of an instrumentation point actually executing.
-	 * 
-	 * @param chance the value out of 100 that will decide the executing chance
-	 * @return the if statement that will decide if the instrument will occur
-	 */
-	private String getIfChance( int chance ) {
-
-		Random rand = new Random();
-		String randomNumber = String.valueOf( ( rand.nextInt( 100 - 0 ) + 0 ) );
-
-		return "if(" + randomNumber + " <= " + chance + ")";
-	}
+	private final int	BUFFER_SIZE	= 127;				// A common buffer size for character I/O
+	private NoiseMaker	_noiseMaker	= new NoiseMaker(); // The object to generate noise
+	private int			_charMod	= 0;				// A counter of the modified characters on the current line
 
 	/**
 	 * Prints the file content to the same file path with the modification of
@@ -98,16 +32,22 @@ public class Instrumentor {
 	 * @param filePath the file's path
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private void printFile( String fileContent, String filePath ) throws IOException {
+	private void printFile( String fileContent, String filePath ) {
 
 		// Create the file name for the instrumented file
 		String fileName = ( filePath + ".instr" );
 
 		// Write the fileContent to the new file
-		FileWriter fw = new FileWriter( fileName );
-		fw.write( fileContent );
-		fw.flush();
-		fw.close();
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter( fileName );
+			fw.write( fileContent );
+			fw.flush();
+			fw.close();
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -117,38 +57,26 @@ public class Instrumentor {
 	 * character biases. Multiple instrumentation are allowed and handled on a
 	 * single line.
 	 * 
-	 * @TODO Should probably refactor and split this algorithm up more.
 	 * @param sourceFile the source file to be instrumented
 	 * @param instrPoints the arraylist of instrumentation points to be considered
 	 */
 	public void instrument( File sourceFile, ArrayList<InstrumentationPoint> instrPoints ) {
 
-		// Read the sourceFile and create the reading and file content objects
-		FileReader fileReader = null;
-		try {
-			fileReader = new FileReader( sourceFile );
-		}
-		catch( FileNotFoundException e ) {
-			e.printStackTrace();
-		}
-		BufferedReader bufReader = new BufferedReader( fileReader );
-		StringBuffer fileContents = new StringBuffer();
+		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
+		BufferedReader bufReader = getBufferReader( sourceFile ); // The buffer reader of the original source file
+		String curLine = ""; // The current line's value
+		String modLine = ""; // The modified current line's value
+		int lineNum = 1; // The current line number
 
 		// If bufferReader is ready start parsing the sourceFile
-		String curLine = "";
-		String modLine = "";
-		String noise = "";
-		int lastCharMod = 0;
-		int lineNum = 1;
 		try {
 			if( bufReader.ready() ) {
 				String buffer = "";
-				int charMod = 0;
+				_charMod = 0;
 
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
 
-					// The modified line will be based off the current line
 					modLine = curLine;
 
 					// Loop through all the instrumentation points
@@ -163,65 +91,29 @@ public class Instrumentor {
 							// If this instrumentation point is on the current line
 							if( singlePoint.getLine() == lineNum ) {
 
-								// If the modLine is not null then the line has been changed
-								if( modLine != null ) {
-									curLine = modLine;
-								}
-
-								// Reset the modLine to accommodate new instrumentation point
-								modLine = "";
-
-								// Create a characterIterator to navigate the line
-								CharacterIterator charIter = new StringCharacterIterator( curLine );
-
-								// For as long as there are characters left to read
-								while( charIter.current() != CharacterIterator.DONE ) {
-
-									// Get the current position of the current character
-									int currentPosition = charIter.getIndex();
-
-									// If the current position is where the instrumentation should occur
-									if( ( singlePoint.getCharacter() + charMod - 1 ) == currentPosition ) {
-
-										// Make the noise given the instrumentation information
-										noise = makeNoise( singlePoint.getChance(), singlePoint.getType(), singlePoint.getLow(), singlePoint.getHigh() );
-
-										// Add the noise to the line
-										modLine = modLine + noise;
-
-										// Change the character modifier to reflect the added noise
-										lastCharMod = charMod + noise.length() - 1;
-									}
-
-									// If there are more characters add the current character to the mod line
-									if( charIter.next() != CharacterIterator.DONE ) {
-										modLine = modLine + charIter.current();
-									}
-								}
-
-								// Update the character modifier
-								charMod = lastCharMod;
+								// Evaluate this line based on the current information
+								modLine = evaluateLine( singlePoint, curLine, modLine );
 							}
 						}
 					}
 
-					// If the modLine is not null then append it to the fileContents
-					if( modLine != null ) {
-
-						// Add modLine to the buffer
+					// Add modLine or curLine to the buffer depending if modLine changed
+					if( !modLine.equals( curLine ) ) {
 						buffer = buffer + modLine + "\n";
-
-						// If the buffer's length is over the buffer size then dump it
-						if( buffer.length() > this.BUFFER_SIZE ) {
-							fileContents.append( buffer );
-							buffer = "";
-						}
-
-						// Increase the line number, reset the modLine and charMod
-						lineNum++;
-						modLine = null;
-						charMod = 0;
 					}
+					else {
+						buffer = buffer + curLine + "\n";
+					}
+
+					// If the buffer's length is over the buffer size then dump it
+					if( buffer.length() > this.BUFFER_SIZE ) {
+						fileContents.append( buffer );
+						buffer = "";
+					}
+
+					// Increase the line number, reset the modLine and charMod
+					lineNum++;
+					_charMod = 0;
 				}
 
 				// Append the rest of the buffer before exiting
@@ -233,11 +125,78 @@ public class Instrumentor {
 		}
 
 		// Print the fileContents to an instrumented source
+		printFile( fileContents.toString(), sourceFile.toString() );
+	}
+
+	/**
+	 * This method will take a source file and will produce a buffer reader
+	 * from it that allows for line-by-line parsing of the file's contents.
+	 * 
+	 * @param sourceFile the source file to be used for the buffer reader
+	 * @return the buffer reader of the file that was used
+	 */
+	private BufferedReader getBufferReader( File sourceFile ) {
+
+		// Read the sourceFile and create the reading and file content objects
+		FileReader fileReader = null;
 		try {
-			printFile( fileContents.toString(), sourceFile.toString() );
+			fileReader = new FileReader( sourceFile );
 		}
-		catch( IOException e ) {
+		catch( FileNotFoundException e ) {
 			e.printStackTrace();
 		}
+
+		return new BufferedReader( fileReader );
+	}
+
+	/**
+	 * This method will evaluate a line and will insert noise if the current
+	 * instrumentation point demands it. The method will also be aware of
+	 * previous modifications that occurred on it and will take that into account.
+	 * 
+	 * @param currentPoint the current instrumentation point that is being serviced
+	 * @param curLine the current line that is being serviced
+	 * @return the modified (instrumented) string of the original line
+	 */
+	private String evaluateLine( InstrumentationPoint currentPoint, String curLine, String modLine ) {
+
+		// If the modLine is not null then the line has been changed
+		if( modLine != null ) {
+			curLine = modLine; // Make the curLine equal to the modLine since that is our base now
+		}
+
+		// Reset the modLine to accommodate new instrumentation point
+		modLine = "";
+
+		// Create a characterIterator to navigate the line
+		CharacterIterator charIter = new StringCharacterIterator( curLine );
+
+		// For as long as there are characters left to read
+		while( charIter.current() != CharacterIterator.DONE ) {
+
+			// Get the current position of the current character
+			int currentPosition = charIter.getIndex();
+
+			// If the current position is where the instrumentation should occur
+			if( ( currentPoint.getCharacter() + _charMod - 1 ) == currentPosition ) {
+
+				// Make the noise given the instrumentation information
+				String noise = _noiseMaker.makeNoise( currentPoint.getChance(), currentPoint.getType(), currentPoint
+						.getLow(), currentPoint.getHigh() );
+
+				// Add the noise to the line
+				modLine = modLine + noise;
+
+				// Change the character modifier to reflect the added noise
+				_charMod = _charMod + noise.length() - 1;
+			}
+
+			// If there are more characters add the current character to the mod line
+			if( charIter.next() != CharacterIterator.DONE ) {
+				modLine = modLine + charIter.current();
+			}
+		}
+
+		return modLine;
 	}
 }

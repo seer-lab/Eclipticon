@@ -12,7 +12,7 @@ public class InstrumentationPointTest extends TestCase {
 	@Before public void setUp() {
 		actual = new InstrumentationPoint();
 		actual.setId(0);
-		actual.setChar(5);
+		actual.setCharacter(5);
 		actual.setHigh(500);
 		actual.setLow(1);
 		actual.setLine(20);
@@ -21,7 +21,7 @@ public class InstrumentationPointTest extends TestCase {
 	}
 	
 	@Test public void testGetChar() {
-		assertEquals(5, actual.getChar());
+		assertEquals(5, actual.getCharacter());
 	}
 
 	@Test public void testGetHigh() {

@@ -1,6 +1,7 @@
 package ca.uoit.eclipticon;
 
 import java.io.File;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 import javax.swing.JFileChooser;
@@ -27,37 +28,69 @@ public class Application {
 
 		InstrumentationEngine engine = new InstrumentationEngine();
 
-		System.out.println( "Choose one... please ensure that the value is correct or boom~" );
-		System.out.println( "0 - manual" );
-		System.out.println( "1 - automatic" );
-		System.out.println( "2 - manual + automatic" );
+		boolean running = true;
 
-		// Acquire the mode that the user wants to use
-		Scanner in = new Scanner( System.in );
-		int mode = in.nextInt();
-		in.close();
+		while( running ) {
+			System.out.println( "Please enter the correct integer to make your choice..." );
+			System.out.println( "0 - manual instrumentation" );
+			System.out.println( "1 - automatic instrumentation" );
+			System.out.println( "2 - manual instrumentation + automatic instrumentation" );
+			System.out.println( "3 - quit application" );
 
-		// Instrument using the correct mode
-		if( mode == 0 ) {
-			System.out.println( "Choose the manual instrumentation XML file" );
-			File manualXmlFile = getXmlFile();
+			int mode = -1;
 
-			engine.instrument( mode, manualXmlFile, null );
-		}
-		else if( mode == 1 ) {
-			System.out.println( "Choose the automatic configurations XML file" );
-			File automaticConfig = getXmlFile();
+			// Check to make sure that the input being read is a valid Integer
+			boolean validInput = false;
+			while( !validInput ) {
+				try {
+					// Set up a scanner to read in from the console
+					Scanner in = new Scanner( System.in );
+					mode = in.nextInt();
+					in.close();
 
-			engine.instrument( mode, null, automaticConfig );
-		}
-		else if( mode == 2 ) {
-			System.out.println( "Choose the manual instrumentation XML file" );
-			File manualXmlFile = getXmlFile();
+					validInput = true;
+				}
+				catch( InputMismatchException e ) {
+					System.out.println( "An error occured with the input, try again" );
+					validInput = false;
+				}
+			}
 
-			System.out.println( "Choose the automatic configurations XML file" );
-			File automaticConfig = getXmlFile();
+			// Instrument using the correct mode
+			if( mode == Constants.MANUAL ) {
+				System.out.println( "Choose the manual instrumentation XML file" );
+				File manualXmlFile = getXmlFile();
 
-			engine.instrument( mode, manualXmlFile, automaticConfig );
+				System.out.println( "Performing the manual instrumentation" );
+				engine.instrument( mode, manualXmlFile, null );
+				running = false;
+			}
+			else if( mode == Constants.AUTOMATIC ) {
+				System.out.println( "Choose the automatic configurations XML file" );
+				File automaticConfig = getXmlFile();
+
+				System.out.println( "Performing the automatic instrumentation" );
+				engine.instrument( mode, null, automaticConfig );
+				running = false;
+			}
+			else if( mode == Constants.BOTH ) {
+				System.out.println( "Choose the manual instrumentation XML file" );
+				File manualXmlFile = getXmlFile();
+
+				System.out.println( "Choose the automatic configurations XML file" );
+				File automaticConfig = getXmlFile();
+
+				System.out.println( "Performing the manual instrumentation and automatic instrumentation" );
+				engine.instrument( mode, manualXmlFile, automaticConfig );
+				running = false;
+			}
+			else if( mode == 3 ) {
+				System.out.println( "Quitting applicaiton" );
+				running = false;
+			}
+			else {
+				System.out.println( "Input was not valid, try again." );
+			}
 		}
 	}
 

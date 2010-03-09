@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.InstrumentationPointHandler;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 
@@ -45,13 +46,13 @@ public class InstrumentationEngine {
 
 		// Acquire the instrumentation points data for the appropriate mode of instrumentation
 		ArrayList<InstrumentationPoint> instrPoints = null;
-		if( mode == 0 ) {
+		if( mode == Constants.MANUAL ) {
 			instrPoints = parseXmlFiles( manualXmlFile, null );
 		}
-		else if( mode == 1 ) {
+		else if( mode == Constants.AUTOMATIC ) {
 			instrPoints = parseXmlFiles( null, autoInstrumentCreator.makeXmlFile( automaticConfig ) );
 		}
-		else if( mode == 2 ) {
+		else if( mode == Constants.BOTH ) {
 			instrPoints = parseXmlFiles( manualXmlFile, autoInstrumentCreator.makeXmlFile( automaticConfig ) );
 		}
 
@@ -79,7 +80,7 @@ public class InstrumentationEngine {
 	 * 
 	 * @param manualXmlFile the manual instrumentation points XML file
 	 * @param automaticXmlFile the automatic instrumentation points XML file
-	 * @return an array list of instrumentation points
+	 * @return an arraylist of instrumentation points
 	 */
 	private ArrayList<InstrumentationPoint> parseXmlFiles( File manualXmlFile, File automaticXmlFile ) {
 
@@ -90,7 +91,6 @@ public class InstrumentationEngine {
 
 		// Read the XML file for the instrumentation points
 		try {
-
 			// Acquire the manual instrumentation points if XML file is present
 			if( manualXmlFile != null ) {
 				instrPoints.setXmlLocation( manualXmlFile.getAbsolutePath() );
@@ -102,15 +102,69 @@ public class InstrumentationEngine {
 			if( automaticXmlFile != null ) {
 				instrPoints.setXmlLocation( automaticXmlFile.getAbsolutePath() );
 				instrPoints.readXml();
-				allInstrPoints.addAll( instrPoints.getInstrPoints() );
+
+				// If the allInstrPoints does not exist then make it, otherwise add to it
+				if( allInstrPoints == null ) {
+					allInstrPoints = instrPoints.getInstrPoints();
+				}
+				else {
+					// Add only non-duplicates to the arraylist of all instrumentation points
+					addAutoInstrPoints( allInstrPoints, instrPoints.getInstrPoints() );
+				}
 			}
 		}
 		catch( FileNotFoundException e ) {
 			e.printStackTrace();
 		}
 
-		// TODO Need to remove duplication instrumentation points (from automatic's instrumenting on a manual spot)
-		// TODO Sort the points collection in terms of source file, not sure if needed though
+		/*
+		 * TODO Sort the instrumentation points to ease the instrumentation process,
+		 * 	might not be needed if points are added in order. 
+		 */
+
+		return allInstrPoints;
+	}
+
+	/**
+	 * This method will add the auto instrumentation points to the all instrumentation
+	 * points collection, without adding duplicated points to the collection.
+	 * 
+	 * @param allInstrPoints the all instrumentation points collection
+	 * @param autoInstrPoints the auto instrumentation points collection
+	 * @return an arraylist of all the instrumentation points
+	 */
+	private ArrayList<InstrumentationPoint> addAutoInstrPoints( ArrayList<InstrumentationPoint> allInstrPoints,
+			ArrayList<InstrumentationPoint> autoInstrPoints ) {
+
+		// An arraylist to keep track of the items to add to add from the autoInstrPoints collection
+		ArrayList<Integer> itemsToAdd = new ArrayList<Integer>();
+
+		boolean ignorePoint = false; // A flag to indicate whether to ignore the instrumentation point
+
+		// Loop through the autoInstrPoints collection
+		for( int i = 0; i < autoInstrPoints.size(); i++ ) {
+
+			// Loop through the allInstrPoints collection
+			for( int j = 0; j < allInstrPoints.size(); j++ ) {
+
+				// If there is a match between both instrumentation points then flag to ignore it
+				if( !autoInstrPoints.get( i ).equals( allInstrPoints.get( j ) ) ) {
+					ignorePoint = true;
+				}
+			}
+
+			// If flag is toggled, then ignore this point, otherwise add it
+			if( !ignorePoint ) {
+				itemsToAdd.add( i );
+			}
+
+			ignorePoint = false;
+		}
+
+		// Now go through the itemsToAdd collection and add them to the allInstrPoints collection
+		for( int i = 0; i < itemsToAdd.size(); i++ ) {
+			allInstrPoints.add( autoInstrPoints.get( itemsToAdd.get( i ) ) );
+		}
 
 		return allInstrPoints;
 	}
