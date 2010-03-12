@@ -18,9 +18,9 @@ public final class Constants {
 
 	/** These are the syntax representation of synchronization constructs */
 	static public String	SYNCHRONIZESYNTAX	= "synchronized";
-	static public String	BARRIERSYNTAX		= "barrier";
-	static public String	LATCHSYNTAX			= "latch";
-	static public String	SEMAPHORESYNTAX		= "semaphore";
+	static public String	BARRIERSYNTAX		= ".signal()";
+	static public String	LATCHSYNTAX			= ".lock()";
+	static public String	SEMAPHORESYNTAX		= ".acquire()";
 
 	/** These are the types of instrumentation modes */
 	static public int		MANUAL				= 0;
