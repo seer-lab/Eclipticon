@@ -4,47 +4,52 @@ import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
+import ca.uoit.eclipticon.Constants;
 
 public class InstrumentationPointTest extends TestCase {
 	
 	private InstrumentationPoint actual;
 	
+	int line = 20;
+	int instance = 0;
+	String construct = Constants.SEMAPHORESYNTAX;
+	int type = 0;
+	int prob = 80;
+	int low = 1;
+	int high = 500;
+	
 	@Before public void setUp() {
-		actual = new InstrumentationPoint();
-		actual.setId(0);
-		actual.setCharacter(5);
-		actual.setHigh(500);
-		actual.setLow(1);
-		actual.setLine(20);
-		actual.setSource("test.java");
-		actual.setType(2);
+		
+		actual = new InstrumentationPoint(line, instance, construct, type, prob, low, high);
+		//InstrumentationPoint( int line, int instance, String construct, int type, int prob, int low, int high )
 	}
 	
-	@Test public void testGetChar() {
-		assertEquals(5, actual.getCharacter());
-	}
-
-	@Test public void testGetHigh() {
-		assertEquals(500, actual.getHigh());
-	}
-
-	@Test public void testGetId() {
-		assertEquals(0, actual.getId());
-	}
-
 	@Test public void testGetLine() {
-		assertEquals(20, actual.getLine());
+		assertEquals(line, actual.getLine());
+	}
+	
+	@Test public void testGetInstance() {
+		assertEquals(instance, actual.getInstance());
 	}
 
-	@Test public void testGetLow() {
-		assertEquals(1, actual.getLow());
+	@Test public void testGetConstruct() {
+		assertEquals(construct, actual.getConstruct());
 	}
-
-	@Test public void testGetSource() {
-		assertEquals("test.java", actual.getSource());
-	}
-
+	
 	@Test public void testGetType() {
-		assertEquals(2, actual.getType());
+		assertEquals(type, actual.getType());
 	}
+	
+	@Test public void testGetProbability() {
+		assertEquals(prob, actual.getProbability());
+	}
+	
+	@Test public void testGetLow() {
+		assertEquals(low, actual.getLow());
+	}
+	
+	@Test public void testGetHigh() {
+		assertEquals(high, actual.getHigh());
+	}
+	
 }

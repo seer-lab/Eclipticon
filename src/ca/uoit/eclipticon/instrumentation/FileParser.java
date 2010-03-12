@@ -6,10 +6,13 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.Path;
 
 import ca.uoit.eclipticon.Constants;
+import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
 
@@ -130,7 +133,36 @@ public class FileParser {
 		}
 		return pointsOfInterest;
 	}
-
+	
+	/**
+	 * This method will parse the current line and look for any appearance of
+	 * the appropriate instrumentation point comment. If one is found it will
+	 * might be added to the collection of instrumentation point, depending
+	 * on the probability for this construct.
+	 * 
+	 * @param curLine the current line being parsed
+	 * @param lineNumber the line number that is being parsed
+	 */
+	private ArrayList<InstrumentationPoint> parseLineForInstrumentationPoints( String curLine, int lineNumber ) {
+		ArrayList<InstrumentationPoint> pointsOfInstrumentation = new ArrayList<InstrumentationPoint>();
+		String match = "\\/\\*" + ".*?INSTRUMENTATION POINT" + ".*?\\(" + "(.*?)" + "\\).*?" + "\\*\\/";
+		Pattern pattern = Pattern.compile(match, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(curLine);
+        String params;
+        int count = 0;
+        if (matcher.find())
+        {
+        	params = matcher.group(1);
+        	//String start = matcher.group();
+            //System.out.print( start.toString() + "\n " + params.toString() + "\n");
+        	
+        	//pointsOfInstrumentation.add( new InstrumentationPoint( lineNumber, count) );
+        }
+        
+        //return pointsOfInstrumentation;
+        return null; // Not finished implementing. Need to extract data out of params.
+	}
+	
 	/* INSTRUMENTATION POINT (Sleep:100ms-1000ms, Probability: 100%) */
 	/* INSTRUMENTATION POINT (Yield, Probability: 100%) */
 }
