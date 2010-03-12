@@ -1,9 +1,7 @@
 package ca.uoit.eclipticon.gui.views;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import org.eclipse.core.runtime.Path;
@@ -21,6 +19,8 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.events.TreeEvent;
+import org.eclipse.swt.events.TreeListener;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -35,11 +35,17 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.swt.widgets.TreeItem;
 
 import ca.uoit.eclipticon.data.AutomaticConfiguration;
 import ca.uoit.eclipticon.data.AutomaticConfigurationHandler;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InstrumentationPointHandler;
+import ca.uoit.eclipticon.data.InterestPoint;
+import ca.uoit.eclipticon.data.SourceFile;
+import ca.uoit.eclipticon.instrumentation.FileParser;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
 
@@ -63,7 +69,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	Scale							_scaleSync			= null;
 	Scale							_scaleSemaphores	= null;
 	Scale							_scaleLatches		= null;
-
+	Tree							_tree				= null;
 	boolean							_modified			= false;
 	InstrumentationPointHandler		_iph				= null;
 	AutomaticConfigurationHandler	_ach				= null;
@@ -157,11 +163,51 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		GridLayout gridLayout = new GridLayout();
 		composite.setLayout( gridLayout );
 
+		_tree = new Tree( composite, SWT.MULTI | SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER );
+		TreeColumn col1 = new TreeColumn( _tree, SWT.LEFT );
+
+		col1.setText( "Instrumentation Point" );
+
+		TreeColumn col2 = new TreeColumn( _tree, SWT.LEFT );
+		col2.setText( "Type" );
+
+		TreeColumn col3 = new TreeColumn( _tree, SWT.LEFT );
+		col3.setText( "Delay" );
+		_tree.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
+
+		_tree.setLinesVisible( true );
+		_tree.setHeaderVisible( true );
+		_tree.addSelectionListener( this );
+		_tree.addTreeListener( new TreeListener() {
+
+			@Override
+			public void treeCollapsed( TreeEvent e ) {
+				// TODO Auto-generated method stub
+				Tree parent = ( (TreeItem)e.item ).getParent();
+				for( int i = 0; i < parent.getColumnCount(); i++ ) {
+					parent.getColumn( i ).pack();
+				}
+			}
+
+			@Override
+			public void treeExpanded( TreeEvent e ) {
+				// TODO Auto-generated method stub
+				Tree parent = ( (TreeItem)e.item ).getParent();
+				for( int i = 0; i < parent.getColumnCount(); i++ ) {
+					parent.getColumn( i ).pack();
+				}
+			}
+
+		} );
+		for( int i = 0; i < _tree.getColumnCount(); i++ ) {
+			_tree.getColumn( i ).pack();
+		}
+
 		// Create the Table
 		_tablePoints = new Table( composite, SWT.FULL_SELECTION | SWT.BORDER );
 		gridData = new GridData( GridData.FILL_BOTH );
-
-		_tablePoints.setLayoutData( gridData );
+		_tablePoints.setVisible( false );
+		//_tablePoints.setLayoutData( gridData );
 		_tablePoints.setHeaderVisible( true );
 		_tablePoints.setLinesVisible( true );
 		TableLayout tableLayout = new TableLayout();
@@ -206,7 +252,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_cmbType.add( "Sleep" );
 		_cmbType.add( "Yield" );
 		_cmbType.select( 1 );
-		
+
 		// Create an area for the info you can't change 
 		Composite composite2 = new Composite( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.FILL_BOTH | GridData.VERTICAL_ALIGN_BEGINNING );
@@ -215,7 +261,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridLayout = new GridLayout( 2, false );
 		gridLayout.marginWidth = 0;
 		composite2.setLayout( gridLayout );
-		
+
 		// Line Label
 		Label lineLbl = new Label( composite2, SWT.NULL );
 		gridData = new GridData();
@@ -226,7 +272,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridData = new GridData();
 		_line2Lbl.setLayoutData( gridData );
 		_line2Lbl.setText( "" );
-		
+
 		// Character Info
 		Label charLbl = new Label( composite2, SWT.NULL );
 		gridData = new GridData();
@@ -237,7 +283,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridData = new GridData();
 		_char2Lbl.setLayoutData( gridData );
 		_char2Lbl.setText( "" );
-		
+
 		// Source Info
 		Label SourceLbl = new Label( composite2, SWT.NULL );
 		gridData = new GridData();
@@ -249,7 +295,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_sourceLbl.setLayoutData( gridData );
 		_sourceLbl.setText( "" );
 		// Ending the Area for the info you can't change
-		
+
 		// Lower Bound
 		Label lowerLbl = new Label( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.VERTICAL_ALIGN_BEGINNING );
@@ -300,7 +346,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * @return
 	 */
 	private void createAutoTab( CTabFolder tabFolder ) {
-		
+
 		// Setup the Tab Name
 		CTabItem tabAuto = new CTabItem( tabFolder, SWT.NULL );
 		tabAuto.setText( "Automatic" );
@@ -310,7 +356,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		composite.setLayoutData( gridData );
 		GridLayout gridLayout = new GridLayout();
 		composite.setLayout( gridLayout );
-		
+
 		// Create a Settings Group
 		Group groupSettings = new Group( composite, SWT.NULL );
 		gridData = new GridData( GridData.FILL_BOTH );
@@ -318,7 +364,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		groupSettings.setText( "Settings" );
 		gridLayout = new GridLayout( 3, false );
 		groupSettings.setLayout( gridLayout );
-		
+
 		// Slider for probability of Typ: Yield or Sleep
 		Label typeLbl = new Label( groupSettings, SWT.NULL );
 		gridData = new GridData();
@@ -376,7 +422,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtAutoHigher = new Text( range, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL );
 		_txtAutoHigher.setLayoutData( gridData );
-		
+
 		// Create a group for the mechanisms
 		Group groupMech = new Group( groupSettings, SWT.NULL );
 		gridData = new GridData( GridData.FILL_BOTH );
@@ -426,7 +472,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_scaleLatches.setLayoutData( gridData );
 		_scaleLatches.setMinimum( 0 );
 		_scaleLatches.setMaximum( 100 );
-		
+
 		Label hundredLbl2 = new Label( groupMech, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_CENTER | GridData.VERTICAL_ALIGN_CENTER );
 		hundredLbl2.setLayoutData( gridData );
@@ -438,7 +484,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridData.horizontalSpan = 3;
 		typeMech3.setLayoutData( gridData );
 		typeMech3.setText( "Semaphores" );
-		
+
 		Label zeroLbl3 = new Label( groupMech, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_CENTER | GridData.VERTICAL_ALIGN_CENTER );
 		zeroLbl3.setLayoutData( gridData );
@@ -454,7 +500,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_CENTER | GridData.VERTICAL_ALIGN_CENTER );
 		hundredLbl3.setLayoutData( gridData );
 		hundredLbl3.setText( "100" );
-		
+
 		// Synchronization Slider
 		Label typeMech4 = new Label( groupMech, SWT.NULL );
 		gridData = new GridData();
@@ -477,7 +523,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_CENTER | GridData.VERTICAL_ALIGN_CENTER );
 		hundredLbl4.setLayoutData( gridData );
 		hundredLbl4.setText( "100" );
-				
+
 		// Default Button
 		Button but = new Button( groupSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
@@ -494,15 +540,15 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * @param autoConfig
 	 */
 	public void populateAutoTab( AutomaticConfiguration autoConfig ) {
-		_sleepYield.setSelection( autoConfig.getYieldProbability() );
+		_sleepYield.setSelection( autoConfig.getYieldChance() );
 		_txtAutoLower.setText( String.valueOf( autoConfig.getLowDelayRange() ) );
 		_txtAutoHigher.setText( String.valueOf( autoConfig.getHighDelayRange() ) );
-		_scaleBarrier.setSelection( autoConfig.getBarrierProbability() );
-		_scaleLatches.setSelection( autoConfig.getLatchProbability() );
-		_scaleSemaphores.setSelection( autoConfig.getSemaphoreProbability() );
-		_scaleSync.setSelection( autoConfig.getSynchronizeProbability() );
+		_scaleBarrier.setSelection( autoConfig.getBarrierChance() );
+		_scaleLatches.setSelection( autoConfig.getLatchChance() );
+		_scaleSemaphores.setSelection( autoConfig.getSemaphoreChance() );
+		_scaleSync.setSelection( autoConfig.getSynchronizeChance() );
 	}
-	
+
 	/**
 	 * Fills the table with the instrumentation points specified in the XML file
 	 * @param instrPoints
@@ -520,7 +566,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				Path path = new Path( currentPoint.getSource() );
 
 				item.setText( 1, path.lastSegment() );
-				
+
 				// TODO: Make it use CONSTANTS instead.
 				if( currentPoint.getType() == 0 )
 					item.setText( 2, "Sleep" );
@@ -529,7 +575,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			}
 		}
 	}
-	
+
 	/**
 	 * Fill the information below the tables on the manual tab.
 	 * @param instrPoint
@@ -549,7 +595,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		Path path = new Path( instrPoint.getSource() );
 		_sourceLbl.setText( path.lastSegment() );
 	}
-	
+
 	/**
 	 * Refreshes the table item to reflect the model
 	 * 
@@ -563,7 +609,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		//tablePoints.removeAll();
 		//fillTable( _iph.getInstrPoints() );
 	}
-	
+
 	/**
 	 * Clears the table and repopulates from the model
 	 */
@@ -580,43 +626,40 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public Control getControl() {
-		// TODO Auto-generated method stub
+
 		return _compositePoints;
 	}
 
 	@Override
 	public Object getInput() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public ISelection getSelection() {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	@Override
 	public void refresh() {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void setInput( Object arg0 ) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void setSelection( ISelection arg0, boolean arg1 ) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void widgetDefaultSelected( SelectionEvent arg0 ) {
-		// TODO Auto-generated method stub
+		// TODO 
 
 	}
 
@@ -625,6 +668,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * Takes care of the widget selections
 	 */
 	public void widgetSelected( SelectionEvent arg0 ) {
+
 		// The widget selected was an item in our table
 		if( arg0.item instanceof TableItem ) {
 			// Grab the model and populate the info
@@ -632,63 +676,145 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			InstrumentationPoint selectedPoint = (InstrumentationPoint)selectedItem.getData();
 			fillInfoLabels( selectedPoint );
 		}
-		
+
+		// Selected Item was something in our Tree
+		else if( arg0.item instanceof TreeItem ) {
+
+			TreeItem selectedItem = (TreeItem)arg0.item;
+
+			// If the selection was checking a checkbox
+			if( arg0.detail == SWT.CHECK ) {
+
+				// and the selection was at the root (File Names)
+				if( selectedItem.getParentItem() == null ) {
+					if( selectedItem.getGrayed() ) {
+						selectedItem.setChecked( true );
+
+					}
+					// Make all it's children the same check status
+					if( selectedItem.getItemCount() > 0 ) {
+						for( TreeItem i : selectedItem.getItems() ) {
+							i.setChecked( selectedItem.getChecked() );
+						}
+					}
+
+					selectedItem.setGrayed( false );
+				}
+				// but if the selection was not at the root (Line numbers)
+				else {
+
+					// Get it's root item (File Name)
+					TreeItem parent = selectedItem.getParentItem();
+
+					// Check the root
+					selectedItem.getParentItem().setChecked( true );
+					//Start it not grayed
+					parent.setGrayed( false );
+
+					// Check to see if it was checked or unchecked
+					if( selectedItem.getChecked() ) {
+
+						// Go through it's siblings
+						for( TreeItem i : parent.getItems() ) {
+
+							// If it comes to a sibling that isn't selected the root is grayed
+							if( !i.getChecked() ) {
+								parent.setGrayed( true );
+								break;
+							}
+						}
+					}
+
+					// It was unchecked
+					else {
+
+						// Go through all the siblings
+						for( TreeItem i : parent.getItems() ) {
+
+							// if comes to one that is checked make the root grayed
+							if( i.getChecked() ) {
+								parent.setGrayed( true );
+								break;
+							}
+						}
+					}
+				}
+
+			}
+		}
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
-			
-			//TEMPORARYYYYYYY
-			Button pressedButton = (Button)arg0.item;
 
-			String temp;
-			int id;
-			String source;
-			int line;
-			int character;
-			int type;
-			int chance;
-			int low;
-			int high;
-			BufferedReader reader;
-			reader = new BufferedReader( new InputStreamReader( System.in ) );
-			try {
-				System.out.println( "ID:" );
-				temp = reader.readLine();
-				id = Integer.parseInt( temp );
-				System.out.println( "Source:" );
-				source = reader.readLine();
-				System.out.println( "Line:" );
-				temp = reader.readLine();
-				line = Integer.parseInt( temp );
-				System.out.println( "Character:" );
-				temp = reader.readLine();
-				character = Integer.parseInt( temp );
-				System.out.println( "Type:" );
-				temp = reader.readLine();
-				type = Integer.parseInt( temp );
-				System.out.println( "Probability:" );
-				temp = reader.readLine();
-				chance = Integer.parseInt( temp );
-				System.out.println( "Low:" );
-				temp = reader.readLine();
-				low = Integer.parseInt( temp );
-				System.out.println( "High:" );
-				temp = reader.readLine();
-				high = Integer.parseInt( temp );
-				_iph.addInstrumentationPoint( id, source, line, character, type, chance, low, high );
-				_iph.writeXml();
-				refreshTable();
+			//			//TEMPORARYYYYYYY
+			//			Button pressedButton = (Button)arg0.item;
+			//
+			//			String temp;
+			//			int id;
+			//			String source;
+			//			int line;
+			//			int character;
+			//			int type;
+			//			int chance;
+			//			int low;
+			//			int high;
+			//			BufferedReader reader;
+			//			reader = new BufferedReader( new InputStreamReader( System.in ) );
+			//			try {
+			//				System.out.println( "ID:" );
+			//				temp = reader.readLine();
+			//				id = Integer.parseInt( temp );
+			//				System.out.println( "Source:" );
+			//				source = reader.readLine();
+			//				System.out.println( "Line:" );
+			//				temp = reader.readLine();
+			//				line = Integer.parseInt( temp );
+			//				System.out.println( "Character:" );
+			//				temp = reader.readLine();
+			//				character = Integer.parseInt( temp );
+			//				System.out.println( "Type:" );
+			//				temp = reader.readLine();
+			//				type = Integer.parseInt( temp );
+			//				System.out.println( "Probability:" );
+			//				temp = reader.readLine();
+			//				chance = Integer.parseInt( temp );
+			//				System.out.println( "Low:" );
+			//				temp = reader.readLine();
+			//				low = Integer.parseInt( temp );
+			//				System.out.println( "High:" );
+			//				temp = reader.readLine();
+			//				high = Integer.parseInt( temp );
+			//				_iph.addInstrumentationPoint( id, source, line, character, type, chance, low, high );
+			//				_iph.writeXml();
+			//				refreshTable();
+			//
+			//			}
+			//			catch( IOException e ) {
+			//				// TODO Auto-generated catch block
+			//				e.printStackTrace();
+			//			}
+
+			FileParser newFP = new FileParser();
+			Path tmpPath = new Path( "C:/Users/Cody/Downloads/src/src/ca/uoit" );
+			ArrayList<SourceFile> sources = newFP.getFiles( tmpPath );
+
+			for( SourceFile sf : sources ) {
+				newFP.findInterestPoints( sf );
+
+				TreeItem item = new TreeItem( _tree, SWT.NONE );
+				item.setText( sf.getName() );
+				for( InterestPoint ip : sf.getInterestingPoints() ) {
+					TreeItem subItem = new TreeItem( item, SWT.NONE );
+
+					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), "" };
+					subItem.setText( strings );
+				}
 
 			}
-			catch( IOException e ) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
 		}
-		
+
 		// The Widget selected was a Combo box
 		else if( arg0.widget == _cmbType ) {
-			
+
 			// Look at the table item currently being editted.
 			TableItem[] item = _tablePoints.getSelection();
 			InstrumentationPoint point = (InstrumentationPoint)item[ 0 ].getData();
@@ -700,13 +826,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 					_modified = true;
 				}
 			}
-			else if( _cmbType.getText().compareTo( "Yield" ) == 0 ){
+			else if( _cmbType.getText().compareTo( "Yield" ) == 0 ) {
 				if( point.getType() != 1 ) {
 					point.setType( 1 );
 					_modified = true;
 				}
 			}
-			
+
 			// If the modified flag is raised, the current tableitem has been changed
 			// so write out to xml
 			if( _modified ) {
@@ -722,52 +848,52 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				}
 			}
 		}
-		
+
 		// If the Widget Selected is a Yield Scale
 		else if( arg0.widget == _sleepYield ) {
 			// If it was moved set the flag
-			if( _sleepYield.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
-				_ach.getConfiguration().setYieldProbability( _sleepYield.getSelection() );
+			if( _sleepYield.getSelection() != _ach.getConfiguration().getYieldChance() ) {
+				_ach.getConfiguration().setYieldChance( _sleepYield.getSelection() );
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Barrier Scale
 		else if( arg0.widget == _scaleBarrier ) {
 			// If it was moved set the flag
-			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
-				_ach.getConfiguration().setBarrierProbability( _scaleBarrier.getSelection() );
+			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getYieldChance() ) {
+				_ach.getConfiguration().setBarrierChance( _scaleBarrier.getSelection() );
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Latch Scale
 		else if( arg0.widget == _scaleLatches ) {
 			// If it was moved set the flag
-			if( _scaleLatches.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
-				_ach.getConfiguration().setLatchProbability( _scaleLatches.getSelection() );
+			if( _scaleLatches.getSelection() != _ach.getConfiguration().getYieldChance() ) {
+				_ach.getConfiguration().setLatchChance( _scaleLatches.getSelection() );
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Semaphore Scale
 		else if( arg0.widget == _scaleSemaphores ) {
 			// If it was moved set the flag
-			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
-				_ach.getConfiguration().setSemaphoreProbability( _scaleSemaphores.getSelection() );
+			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getYieldChance() ) {
+				_ach.getConfiguration().setSemaphoreChance( _scaleSemaphores.getSelection() );
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Synchronization Scale
 		else if( arg0.widget == _scaleSync ) {
 			// If it was moved set the flag
-			if( _scaleSync.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
-				_ach.getConfiguration().setSynchronizeProbability( _scaleSync.getSelection() );
+			if( _scaleSync.getSelection() != _ach.getConfiguration().getYieldChance() ) {
+				_ach.getConfiguration().setSynchronizeChance( _scaleSync.getSelection() );
 				_modified = true;
 			}
 		}
-		
+
 		// If the flag has been raised update the Auto Config Scale
 		if( _modified ) {
 			try {
@@ -799,16 +925,16 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public void focusLost( FocusEvent e ) {
-		
+
 		// Flag Variable
 		int temp = 0;
-		
+
 		// Upon the widget loosing focus it checks to see if anything has been modified
 		if( _modified ) {
 			// If it has been modified
 			TableItem[] selectedItem = _tablePoints.getSelection();
 			InstrumentationPoint pointChanging = (InstrumentationPoint)selectedItem[ 0 ].getData();
-			
+
 			// Find which widget lost focus then update it
 			if( e.widget == _txtHigher ) {
 				pointChanging.setHigh( Integer.parseInt( _txtHigher.getText() ) );
@@ -839,7 +965,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			
+
 			refreshSelectedTableItem();
 			_modified = false;
 
