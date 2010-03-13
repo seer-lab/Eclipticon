@@ -14,7 +14,6 @@ public class AutomaticConfiguration {
 	private int	_highDelayRange			= 0;	// The high delay range for the sleep noise
 	private int	_sleepProbability		= 0;	// The probability of a noise being sleep (out of 100)
 	private int	_yieldProbability		= 0;	// The probability of a noise being yield (out of 100)
-	private int	_instrumentProbability	= 0;	// The probability of noise being activated during execution (out of 100)
 	private int	_synchronizeProbability	= 0;	// The probability of a synchronize being instrumented (out of 100)
 	private int	_barrierProbability		= 0;	// The probability of a barrier being instrumented (out of 100)
 	private int	_latchProbability		= 0;	// The probability of a latch being instrumented (out of 100)
@@ -90,24 +89,6 @@ public class AutomaticConfiguration {
 	 */
 	public void setYieldProbability( int yieldProbability ) {
 		this._yieldProbability = yieldProbability;
-	}
-
-	/**
-	 * Gets the instrument probability.
-	 * 
-	 * @return the instrument probability
-	 */
-	public int getInstrumentProbability() {
-		return _instrumentProbability;
-	}
-
-	/**
-	 * Sets the instrument probability.
-	 * 
-	 * @param instrumentProbability the instrument probability
-	 */
-	public void setInstrumentProbability( int instrumentProbability ) {
-		this._instrumentProbability = instrumentProbability;
 	}
 
 	/**

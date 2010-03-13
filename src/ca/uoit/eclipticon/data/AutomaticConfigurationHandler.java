@@ -29,12 +29,16 @@ import ca.uoit.eclipticon.gui.Activator;
 public class AutomaticConfigurationHandler {
 
 	private AutomaticConfiguration	_configurationData	= null; // The configuration data for automatic configuration
-	private String					_xmlLocation		= null; // The XML Location (Path)
-
+	private String					_xmlLocation		= null; // The path of the XML file
+	
+	/**
+	 * The constructor is used to acquire the automatic configuration's XML location 
+	 * from the plugin's metadata folder to restore previous settings.
+	 */
 	public AutomaticConfigurationHandler() {
-		// When the plugin is running functionally this is the location our xml will be stored.
 		_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "AutomaticConfig.XML";
 	}
+	
 	/**
 	 * Sets the configuration data for the automatic instrumentation.
 	 * 
@@ -42,14 +46,13 @@ public class AutomaticConfigurationHandler {
 	 * @param highDelayRange the high delay range
 	 * @param sleepProbability the sleep probability
 	 * @param yieldProbability the yield probability
-	 * @param instrumentProbability the instrument probability
 	 * @param synchronizeProbability the synchronize probability
 	 * @param barrierProbability the barrier probability
 	 * @param latchProbability the latch probability
 	 * @param semaphoreProbability the semaphore probability
 	 */
 	public void setConfigurationData( int lowDelayRange, int highDelayRange, int sleepProbability,
-			int yieldProbability, int instrumentProbability, int synchronizeProbability, int barrierProbability,
+			int yieldProbability, int synchronizeProbability, int barrierProbability,
 			int latchProbability, int semaphoreProbability ) {
 
 		// If the configuration data object is not initialized then do it now
@@ -62,7 +65,6 @@ public class AutomaticConfigurationHandler {
 		_configurationData.setHighDelayRange( highDelayRange );
 		_configurationData.setSleepProbability( sleepProbability );
 		_configurationData.setYieldProbability( yieldProbability );
-		_configurationData.setInstrumentProbability( instrumentProbability );
 		_configurationData.setSynchronizeProbability( synchronizeProbability );
 		_configurationData.setBarrierProbability( barrierProbability );
 		_configurationData.setLatchProbability( latchProbability );
@@ -79,6 +81,7 @@ public class AutomaticConfigurationHandler {
 		if( _configurationData == null ) {
 			_configurationData = new AutomaticConfiguration();
 		}
+		
 		// Open a new file at the plugin location
 		// TODO: Handle file not found.
 		File file = new File( _xmlLocation );
@@ -91,9 +94,9 @@ public class AutomaticConfigurationHandler {
 
 			//Get a list of Instrumentation Points
 			NodeList automicaticConfigTopNode = doc.getElementsByTagName( "AutomaticConfig" );
-
 			Node currentNode = automicaticConfigTopNode.item( 0 );
-			// Read in the values for the current Instrumentaion Point
+			
+			// Read in the values for the current Instrumentation Point
 			if( currentNode.getNodeType() == Node.ELEMENT_NODE ) {
 
 				Element autoConfigElement = (Element)currentNode;
@@ -102,7 +105,6 @@ public class AutomaticConfigurationHandler {
 				_configurationData.setHighDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "highDelayRange" ) ) );
 				_configurationData.setSleepProbability( Integer.valueOf( getNodeValue( autoConfigElement, "sleepProbability" ) ) );
 				_configurationData.setYieldProbability( Integer.valueOf( getNodeValue( autoConfigElement, "yieldProbability" ) ) );
-				_configurationData.setInstrumentProbability( Integer.valueOf( getNodeValue( autoConfigElement, "instrumentProbability" ) ) );
 				_configurationData.setSynchronizeProbability( Integer.valueOf( getNodeValue( autoConfigElement, "synchronizeChance" ) ) );
 				_configurationData.setLatchProbability( Integer.valueOf( getNodeValue( autoConfigElement, "latchChance" ) ) );
 				_configurationData.setSemaphoreProbability( Integer.valueOf( getNodeValue( autoConfigElement, "semaphoreChance" ) ) );
@@ -110,25 +112,22 @@ public class AutomaticConfigurationHandler {
 
 		}
 		catch( ParserConfigurationException e ) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		catch( SAXException e ) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		catch( IOException e ) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 	}
 
 	/**
-	 * Get the value of the tag given, from within the  Automatic Conifguration given
-	 * @param autoConfigElement
-	 * @param strTag
-	 * @return
+	 * Get the value of the tag given, from within the Automatic Configuration given
+	 * @param autoConfigElement the element within the automatic configuration
+	 * @param strTag the tag for the element to be found
+	 * @return a node from an element using the tag
 	 */
 	private String getNodeValue( Element autoConfigElement, String strTag ) {
 		NodeList nodeList = autoConfigElement.getElementsByTagName( strTag );
@@ -154,7 +153,6 @@ public class AutomaticConfigurationHandler {
 			xml = xml.concat( createElement( "highDelayRange", _configurationData.getHighDelayRange() ) );
 			xml = xml.concat( createElement( "sleepChance", _configurationData.getSleepProbability() ) );
 			xml = xml.concat( createElement( "yieldChance", _configurationData.getYieldProbability() ) );
-			xml = xml.concat( createElement( "instrumentChance", _configurationData.getInstrumentProbability() ) );
 			xml = xml.concat( createElement( "synchronizeChance", _configurationData.getSynchronizeProbability() ) );
 			xml = xml.concat( createElement( "latchChance", _configurationData.getLatchProbability() ) );
 			xml = xml.concat( createElement( "semaphoreChance", _configurationData.getSemaphoreProbability() ) );
@@ -162,8 +160,8 @@ public class AutomaticConfigurationHandler {
 
 			xml = xml.concat( "</list>" );
 			File newFile = new File( _xmlLocation );
+			
 			// Create a new file if it doesn't exist
-
 			newFile.createNewFile();
 
 			Writer output = new BufferedWriter( new FileWriter( _xmlLocation ) );
@@ -175,14 +173,13 @@ public class AutomaticConfigurationHandler {
 				output.close();
 			}
 		}
-
 	}
 
 	/**
-	 * Creates the XML tag and returns the String
-	 * @param tag
-	 * @param value
-	 * @return
+	 * Creates an XML element given the tag and string value.
+	 * @param tag the tag to be used
+	 * @param value the value to be used
+	 * @return the XML element
 	 */
 	private String createElement( String tag, String value ) {
 		String markup = "<" + tag + ">" + value + "</" + tag + ">\n\r";
@@ -190,10 +187,10 @@ public class AutomaticConfigurationHandler {
 	}
 
 	/**
-	 * Creates the XML tag and returns the String
-	 * @param tag
-	 * @param value
-	 * @return
+	 * Creates an XML element given the tag and int value.
+	 * @param tag the tag to be used
+	 * @param value the value to be used
+	 * @return the XML element
 	 */
 	private String createElement( String tag, int value ) {
 		String markup = createElement( tag, String.valueOf( value ) );
@@ -201,9 +198,9 @@ public class AutomaticConfigurationHandler {
 	}
 
 	/**
-	 * Gets the configuration data object.
+	 * Gets the automatic configuration data object.
 	 * 
-	 * @return the configuration data object
+	 * @return the automatic configuration data object
 	 */
 	public AutomaticConfiguration getConfiguration() {
 		return _configurationData;
