@@ -59,6 +59,7 @@ public class FileParser {
 
 					// and the file is a source file
 					if( fileTemp.toString().endsWith( ".java" ) ) {
+
 						allSourceFiles.add( new SourceFile( currentPath ) );
 					}
 				}
@@ -95,6 +96,7 @@ public class FileParser {
 
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
+
 					// Handle appropriate synchronize construct if they reside on current line
 
 					// Synchronize
