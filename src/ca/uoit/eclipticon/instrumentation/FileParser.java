@@ -10,11 +10,27 @@ import java.util.ArrayList;
 import org.eclipse.core.runtime.Path;
 
 import ca.uoit.eclipticon.Constants;
+import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
 
+/**
+ * This class is concerned with the acquisition of the files found in a workspace, as well as parsing
+ * for {@link InterestPoint} locations given a source file.
+ * 
+ * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
+ */
 public class FileParser {
 
+	ArrayList<SequenceOrdering>	_sequence	= new ArrayList<SequenceOrdering>();	// The sequence of constructs
+
+	/**
+	 * Will recursively acquire all the files under the root path, and return an arraylist
+	 * of {@link SourceFile}.
+	 * 
+	 * @param root the root path of the workplace
+	 * @return an arraylist of {@link SourceFiles}
+	 */
 	public ArrayList<SourceFile> getFiles( Path root ) {
 		// Make a file out of the path
 		File file = root.toFile();
@@ -30,36 +46,32 @@ public class FileParser {
 
 			// Go through each File/Folder
 			for( File fileTemp : allFiles ) {
+
 				Path currentPath = new Path( fileTemp.getPath() );
-				// If it is a folder
+
+				// If it is a folder then recursively call getFiles and add their returns to the current arraylist
 				if( fileTemp.isDirectory() ) {
-					// Recursively call getFiles and add their returns to the current arraylist
 					allSourceFiles.addAll( getFiles( currentPath ) );
 				}
-				//If it is a file
+
+				// If it is a file
 				else if( fileTemp.isFile() ) {
 
 					// and the file is a source file
 					if( fileTemp.toString().endsWith( ".java" ) ) {
-
 						allSourceFiles.add( new SourceFile( currentPath ) );
 					}
-
 				}
-
 			}
 		}
-
 		return allSourceFiles;
-
 	}
 
 	/**
 	 * This method will find all the potential synchronization constructs within
-	 * the current source file, when one is found then based on the probability
-	 * the construct will be instrumented or not.
+	 * the current source file, these points are then turned into {@link InterestPoint}.
 	 * 
-	 * @param sourceFile the source file being examined
+	 * @param source the {@link SourceFile} of interest
 	 */
 	public void findInterestPoints( SourceFile source ) {
 
@@ -75,20 +87,64 @@ public class FileParser {
 
 		// If bufferReader is ready start parsing the sourceFile
 		String curLine = "";
+		String prevLine = "";
 		int lineNum = 1;
+		int sequenceNum = 0;
 		try {
 			if( bufReader.ready() ) {
 
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
-
 					// Handle appropriate synchronize construct if they reside on current line
-					source.addInterestingPoints( parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZESYNTAX ));
-					source.addInterestingPoints(parseLineForConstructs( curLine, lineNum, Constants.BARRIERSYNTAX ));
-					source.addInterestingPoints(parseLineForConstructs( curLine, lineNum, Constants.LATCHSYNTAX ));
-					source.addInterestingPoints(parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORESYNTAX ));
+
+					// Synchronize
+					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCK, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCKINTERRUPTIBLY, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_TRYLOCK, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_UNLOCK, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_NEWCONDITION, sequenceNum );
+					
+					// Latch
+					parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_COUNTDOWN, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_AWAIT, sequenceNum );
+										
+					// Barrier
+					parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_RESET, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_AWAIT, sequenceNum );
+					
+					// Semaphore
+					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIREUNINTERRUPTIBLY, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN, sequenceNum );
+					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE, sequenceNum );
 
 					lineNum++;
+					prevLine = curLine; // Keep current line in case it has a PreemptionPoint annotation
+				}
+
+				// Fix the ordering of the interest points
+				ArrayList<SequenceOrdering> orderedPoints = correctSequenceOrdering();
+
+				// For each point found, figure out if it is an instrumentation or interest point
+				for( SequenceOrdering singlePoint : orderedPoints ) {
+
+					// Figure out if this interest point was already annotated to be an instrumentation point
+					InstrumentationPoint instrumentationPoint = parseLineForAnnotations( prevLine, lineNum, singlePoint
+							.getCharacterPosition(), singlePoint.getConstructType() );
+
+					// Check for a null value, if so then instrumentation point wasn't there (it is an interest point)
+					if( instrumentationPoint == null ) {
+
+						// Add the interesting points to the source file
+						source.addInterestingPoint( singlePoint.getInterestPoint() );
+					}
+					else {
+
+						// Add the instrumentation point to the source file
+						source.addInterestingPoint( instrumentationPoint );
+					}
 				}
 			}
 		}
@@ -96,41 +152,128 @@ public class FileParser {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * The sequence of interest points discovered is usually out of order, and thus needs 
+	 * re-ordering. This method will correct the sequence's ordering while retainning all the
+	 * additional metadata as found in the {@link SequenceOrdering} class.
+	 * 
+	 * @return the ordered arraylist of the sequence ordering
+	 */
+	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
+
+		ArrayList<SequenceOrdering> sortedOrder = new ArrayList<SequenceOrdering>(); // The sorted order
+		int lowestIndex = _sequence.size() + 1; // The lowest index of to be added (starts off higher then possible)
+		int index = 0; // The selected index to be added to the sortOrder next
+
+		// Keep looping till all the interest points are accounted for
+		while( _sequence.size() != sortedOrder.size() ) {
+
+			// Look at a single sequence object
+			for( SequenceOrdering singleSequence : _sequence ) {
+				if( singleSequence.getCharacterPosition() < lowestIndex ) {
+					lowestIndex = index;
+				}
+				index++;
+			}
+
+			// Add the next lowest interest point in order of sequence
+			sortedOrder.add( _sequence.get( index ) );
+		}
+
+		return sortedOrder;
+	}
 
 	/**
-	 * This method will parse the current line and look for any appearance of
-	 * the appropriate synchronization construct. If one is found it will might
-	 * be added to the collection of instrumentation point, depending on the
-	 * probability for this construct.
+	 * The passed line will be parsed for the syntax of a synchronization construct, when one is found an
+	 * interest point is formed using all the data around it and placed within the inner class {@link SequenceOrdering}
+	 * so that it can hold additional data that is not concerned with an {@link InterestPoint}. The order of found points
+	 * is represented as a sequence number, this number is used since the ordering of points on the line can be non
+	 * sequential and will be ordered later.
 	 * 
-	 * @param curLine the current line being parsed
-	 * @param lineNumber the line number that is being parsed
-	 * @param construct the synchronization construct that is trying to be matched
+	 * @param curLine the current line 
+	 * @param lineNumber the current line's number
+	 * @param construct the synchronization construct 
+	 * @param syntax the syntax of the synchronization construct
+	 * @param sequenceNum the sequence number
 	 */
-	private ArrayList<InterestPoint> parseLineForConstructs( String curLine, int lineNumber, String construct ) {
-		ArrayList<InterestPoint> pointsOfInterest = new ArrayList<InterestPoint>();
-		int pos = 0;
-		int currentPos = 0;
-		boolean stillMore = true;
-		int count = 0;
+	private void parseLineForConstructs( String curLine, int lineNumber, String construct, String syntax,
+			int sequenceNum ) {
+
+		int pos = 0; // The last character position
+		int currentPos = 0; // The current character position
+		boolean stillMore = true; // Flag if there are more relevant syntax
+
+		// Loop for as long as there is relevant syntax
 		while( stillMore ) {
 
 			// Keep going unless no more constructs are found
-			if( ( currentPos = curLine.indexOf( construct, pos ) ) != -1 ) {
+			if( ( currentPos = curLine.indexOf( syntax, pos ) ) != -1 ) {
 
-				// A construct is found at currentPos
-				pointsOfInterest.add( new InterestPoint( lineNumber, count, construct ) );
-				count++;
+				// A construct is found, create an interest point
+				InterestPoint interestingPoint = new InterestPoint( lineNumber, sequenceNum, syntax );
 
-				pos = currentPos + construct.length();
+				// Add to the _sequence, the point and the character position
+				_sequence.add( new SequenceOrdering( interestingPoint, currentPos, construct ) );
+				sequenceNum++;
+
+				pos = currentPos + syntax.length();
 			}
 			else {
 				stillMore = false;
 			}
 		}
-		return pointsOfInterest;
 	}
 
-	/* INSTRUMENTATION POINT (Sleep:100ms-1000ms, Probability: 100%) */
-	/* INSTRUMENTATION POINT (Yield, Probability: 100%) */
+	/**
+	 * This inner class is a data class used to hold additional metadata with an {@link InterestPoint}.
+	 * 
+	 * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
+	 */
+	private class SequenceOrdering {
+
+		private InterestPoint	interestPoint		= null; // An interest point
+		private int				characterPosition	= 0;	// The character position on the line
+		private String			constructType		= null; // The construct type
+
+		/**
+		 * Constructor use to instantiate a {@link SequenceOrdering} data class.
+		 * 
+		 * @param interestPoint the interest point
+		 * @param characterPosition the character position on the line
+		 * @param constructType the construct type
+		 */
+		public SequenceOrdering( InterestPoint interestPoint, int characterPosition, String constructType ) {
+			this.interestPoint = interestPoint;
+			this.characterPosition = characterPosition;
+			this.constructType = constructType;
+		}
+
+		/**
+		 * Gets the {@link InterestPoint}.
+		 * 
+		 * @return the {@link InterestPoint}
+		 */
+		public InterestPoint getInterestPoint() {
+			return interestPoint;
+		}
+
+		/**
+		 * Gets the character position.
+		 * 
+		 * @return the character position
+		 */
+		public int getCharacterPosition() {
+			return characterPosition;
+		}
+
+		/**
+		 * Gets the construct type.
+		 * 
+		 * @return the construct type
+		 */
+		public String getConstructType() {
+			return constructType;
+		}
+	}
 }

@@ -89,7 +89,7 @@ public class SourceFile {
 	public void printIP() {
 		if( !_interestingPoints.isEmpty() ) {
 			for( InterestPoint ip : _interestingPoints ) {
-				System.out.println( "\tLine: " + ip.getLine() + " | Instance: " + ip.getInstance() + " | "
+				System.out.println( "\tLine: " + ip.getLine() + " | Instance: " + ip.getSequence() + " | "
 						+ ip.getConstruct() );
 			}
 		}

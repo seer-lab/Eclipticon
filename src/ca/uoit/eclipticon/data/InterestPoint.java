@@ -6,7 +6,7 @@ package ca.uoit.eclipticon.data;
  * are defined in the Constants class.
  * <p>
  * An interest point is composed of the line number in the source file, the construct of what synchronization it is
- * associated with and finally the instance number. The instance number represents the relative position of this
+ * associated with and finally the sequence number. The sequence number represents the relative position of this
  * interest point to others in the same source line (first interest point is 0, the second one found is 1, etc...)
  * 
  * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
@@ -14,19 +14,19 @@ package ca.uoit.eclipticon.data;
 public class InterestPoint {
 
 	private int		_line		= 0;	// The line number this point is located at
-	private int		_instance	= 0;	// The instance number of in respect to the other interest points on this line
+	private int		_sequence	= 0;	// The sequence number of in respect to the other interest points on this line
 	private String	_construct	= null; // The synchronization construct type of this interest point
 
 	/**
 	 * Constructor for instantiating an interest point that will set the variables for it.
 	 * 
 	 * @param line the line number
-	 * @param instance the instance number location
+	 * @param sequence the sequence number location
 	 * @param construct the constructor type
 	 */
-	public InterestPoint( int line, int instance, String construct ) {
+	public InterestPoint( int line, int sequence, String construct ) {
 		_line = line;
-		_instance = instance;
+		_sequence = sequence;
 		_construct = construct;
 	}
 
@@ -49,21 +49,21 @@ public class InterestPoint {
 	}
 
 	/**
-	 * Gets the instance location number of the interest point.
+	 * Gets the sequence location number of the interest point.
 	 * 
-	 * @return the instance location number
+	 * @return the sequence location number
 	 */
-	public int getInstance() {
-		return _instance;
+	public int getSequence() {
+		return _sequence;
 	}
 
 	/**
-	 * Sets the instance number location of the instrumentation point.
+	 * Sets the sequence number location of the instrumentation point.
 	 * 
-	 * @param instance the instance location number
+	 * @param sequence the instance location number
 	 */
-	public void setInstance( int instance ) {
-		_instance = instance;
+	public void setSequence( int sequence ) {
+		_sequence = sequence;
 	}
 
 	/**
