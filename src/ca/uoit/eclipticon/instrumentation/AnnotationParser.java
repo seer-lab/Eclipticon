@@ -177,4 +177,35 @@ public class AnnotationParser {
         }
         return probability;
 	}
+	
+	
+	/**
+	 * The createAnnotationComment method creates a syntactically correct comment from an Instrumentation Point.
+	 * 
+	 * @param point
+	 * @return
+	 */
+	public String createAnnotationComment(InstrumentationPoint point) {
+		
+		String annotationComment;
+		
+		annotationComment = "/* @PreemptionPoint (";
+		
+		annotationComment = annotationComment + "sequence = " + point.getSequence() + ", ";
+		
+		if(point.getType() == 0) { // then write sleep
+			
+			annotationComment = annotationComment + "type = \"sleep\", "
+				+ "low = " + point.getLow() + ", high = " + point.getHigh() + ", "
+				+ "probability = " + point.getProbability() + ") */";
+		}
+		else {// then write yield
+			
+			annotationComment = annotationComment + "type = \"yield\", "
+				+ "probability = " + point.getProbability() + ") */";
+			
+		}
+		
+		return annotationComment;
+	}
 }
