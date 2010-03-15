@@ -129,12 +129,15 @@ public class FileParser {
 				// Fix the ordering of the interest points
 				ArrayList<SequenceOrdering> orderedPoints = correctSequenceOrdering();
 
+				// Create an annotation parser to parse the prevLine's annotations (if any)
+				AnnotationParser annotationParser = new AnnotationParser();
+
 				// For each point found, figure out if it is an instrumentation or interest point
 				for( SequenceOrdering singlePoint : orderedPoints ) {
 
 					// Figure out if this interest point was already annotated to be an instrumentation point
-					InstrumentationPoint instrumentationPoint = parseLineForAnnotations( prevLine, lineNum, singlePoint
-							.getCharacterPosition(), singlePoint.getConstructType() );
+					InstrumentationPoint instrumentationPoint = annotationParser.parseLineForAnnotations( prevLine,
+							lineNum, singlePoint.getCharacterPosition(), singlePoint.getConstructType() );
 
 					// Check for a null value, if so then instrumentation point wasn't there (it is an interest point)
 					if( instrumentationPoint == null ) {
