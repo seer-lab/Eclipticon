@@ -62,7 +62,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	Scale		_scaleSync			= null;
 	Scale		_scaleSemaphores	= null;
 	Scale		_scaleLatches		= null;
-
+	Boolean		_test				= true;
 	Tree		_tree				= null;
 
 	// AutomaticConfigurationHandler _ach = null;
@@ -469,30 +469,33 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		for( SourceFile sf : sources ) {
 			newFP.findInterestPoints( sf );
 			boolean someChecked = false;
-			TreeItem item = new TreeItem( _tree, SWT.NONE );
-			item.setText( sf.getName() );
-			for( InterestPoint ip : sf.getInterestingPoints() ) {
-				TreeItem subItem = new TreeItem( item, SWT.NONE );
-				String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), "" };
-				subItem.setText( strings );
-				subItem.setData( ip );
-				if( ip instanceof InstrumentationPoint ) {
-					subItem.setChecked( true );
-					item.setChecked( true );
-					InstrumentationPoint tempIP = (InstrumentationPoint)ip;
-					if( tempIP.getType() == Constants.SLEEP )
-						subItem.setText( 2, "Sleep" );
-					else if( tempIP.getType() == Constants.YEILD )
-						subItem.setText( 2, "Yield" );
-					someChecked = true;
-				}
-				else {
-					if( someChecked ) {
-						item.setGrayed( true );
+			if( sf.getInterestingPoints().size() > 0 || _test) {
+				TreeItem item = new TreeItem( _tree, SWT.NONE );
+				item.setText( sf.getName() );
+				for( InterestPoint ip : sf.getInterestingPoints() ) {
+					TreeItem subItem = new TreeItem( item, SWT.NONE );
+					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), "" };
+					subItem.setText( strings );
+					subItem.setData( ip );
+					if( ip instanceof InstrumentationPoint ) {
+						subItem.setChecked( true );
+						item.setChecked( true );
+						InstrumentationPoint tempIP = (InstrumentationPoint)ip;
+						if( tempIP.getType() == Constants.SLEEP )
+							subItem.setText( 2, "Sleep" );
+						else if( tempIP.getType() == Constants.YEILD )
+							subItem.setText( 2, "Yield" );
+						someChecked = true;
+					}
+					else {
+						if( someChecked ) {
+							item.setGrayed( true );
+						}
 					}
 				}
-			}
 
+			}
+			
 		}
 
 	}

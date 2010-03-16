@@ -243,7 +243,7 @@ public class FileParser {
 			if( ( currentPos = curLine.indexOf( syntax, pos ) ) != -1 ) {
 
 				// A construct is found, create an interest point
-				InterestPoint interestingPoint = new InterestPoint( lineNumber, sequenceNum, syntax );
+				InterestPoint interestingPoint = new InterestPoint( lineNumber, sequenceNum, construct );
 
 				// Add to the _sequence, the point and the character position
 				_sequence.add( new SequenceOrdering( interestingPoint, currentPos, construct ) );
