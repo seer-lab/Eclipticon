@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.Viewer;
@@ -36,6 +35,7 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
 
+import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.AutomaticConfiguration;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
@@ -52,7 +52,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	Text		_txtLower			= null;
 	Text		_txtHigher			= null;
-	Text		_txtPerc			= null;
+	Text		_txtProb			= null;
 
 	Combo		_cmbType			= null;
 	Scale		_sleepYield			= null;
@@ -65,7 +65,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	Tree		_tree				= null;
 
-	//AutomaticConfigurationHandler	_ach				= null;
+	// AutomaticConfigurationHandler _ach = null;
 
 	public EclipticonViewer( Composite parent, int i ) {
 		// TODO Auto-generated constructor stub
@@ -85,7 +85,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// Create and populate the Two tabs
 		createManualTab( _folderTab );
 		createAutoTab( _folderTab );
-
+		disableInfoLabels();
+		fillTree();
 		// Initialize the models
 
 		// Select the Manual Tab
@@ -102,14 +103,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_sleepYield.addSelectionListener( this );
 
 		_txtLower.addFocusListener( this );
-		_txtPerc.addFocusListener( this );
+		_txtProb.addFocusListener( this );
 		_txtHigher.addFocusListener( this );
 		_txtAutoLower.addFocusListener( this );
 		_txtAutoHigher.addFocusListener( this );
 
 		_txtLower.addModifyListener( this );
 		_txtHigher.addModifyListener( this );
-		_txtPerc.addModifyListener( this );
+		_txtProb.addModifyListener( this );
 		_txtAutoLower.addModifyListener( this );
 		_txtAutoHigher.addModifyListener( this );
 
@@ -218,14 +219,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtHigher.setLayoutData( gridData );
 
 		// Probability
-		Label percLbl = new Label( groupProperties, SWT.NULL );
+		Label probLbl = new Label( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.VERTICAL_ALIGN_BEGINNING );
-		percLbl.setLayoutData( gridData );
-		percLbl.setText( "Probability of Delay (%):" );
+		probLbl.setLayoutData( gridData );
+		probLbl.setText( "Probability of Delay (%):" );
 
-		_txtPerc = new Text( groupProperties, SWT.BORDER );
+		_txtProb = new Text( groupProperties, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
-		_txtPerc.setLayoutData( gridData );
+		_txtProb.setLayoutData( gridData );
 
 		// Default Button
 		Button but = new Button( groupProperties, SWT.NULL );
@@ -438,6 +439,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	/**
 	 * Adjust the sliders positions to mimic the XML
+	 * 
 	 * @param autoConfig
 	 */
 	public void populateAutoTab( AutomaticConfiguration autoConfig ) {
@@ -452,6 +454,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	/**
 	 * Fills the table with the instrumentation points specified in the XML file
+	 * 
 	 * @param instrPoints
 	 */
 	public void fillTree() {
@@ -459,20 +462,35 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		ResourcesPlugin.getWorkspace();
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
-		
+
 		Path tmpPath = (Path)root.getLocation();
 		ArrayList<SourceFile> sources = newFP.getFiles( tmpPath );
 
 		for( SourceFile sf : sources ) {
 			newFP.findInterestPoints( sf );
-			
+			boolean someChecked = false;
 			TreeItem item = new TreeItem( _tree, SWT.NONE );
 			item.setText( sf.getName() );
 			for( InterestPoint ip : sf.getInterestingPoints() ) {
 				TreeItem subItem = new TreeItem( item, SWT.NONE );
-
 				String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), "" };
 				subItem.setText( strings );
+				subItem.setData( ip );
+				if( ip instanceof InstrumentationPoint ) {
+					subItem.setChecked( true );
+					item.setChecked( true );
+					InstrumentationPoint tempIP = (InstrumentationPoint)ip;
+					if( tempIP.getType() == Constants.SLEEP )
+						subItem.setText( 2, "Sleep" );
+					else if( tempIP.getType() == Constants.YEILD )
+						subItem.setText( 2, "Yield" );
+					someChecked = true;
+				}
+				else {
+					if( someChecked ) {
+						item.setGrayed( true );
+					}
+				}
 			}
 
 		}
@@ -481,6 +499,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	/**
 	 * Fill the information below the tables on the manual tab.
+	 * 
 	 * @param instrPoint
 	 */
 	public void fillInfoLabels( InstrumentationPoint instrPoint ) {
@@ -492,8 +511,23 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			_cmbType.select( _cmbType.indexOf( "Yield" ) );
 		_txtLower.setText( String.valueOf( instrPoint.getLow() ) );
 		_txtHigher.setText( String.valueOf( instrPoint.getHigh() ) );
-		_txtPerc.setText( String.valueOf( instrPoint.getProbability() ) );
+		_txtProb.setText( String.valueOf( instrPoint.getProbability() ) );
+		_cmbType.setEnabled( true );
+		_txtLower.setEnabled( true );
+		_txtHigher.setEnabled( true );
+		_txtProb.setEnabled( true );
 
+	}
+
+	public void disableInfoLabels() {
+		_cmbType.setText( "" );
+		_txtLower.setText( "" );
+		_txtHigher.setText( "" );
+		_txtProb.setText( "" );
+		_cmbType.setEnabled( false );
+		_txtLower.setEnabled( false );
+		_txtHigher.setEnabled( false );
+		_txtProb.setEnabled( false );
 	}
 
 	/**
@@ -545,12 +579,12 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public void widgetDefaultSelected( SelectionEvent arg0 ) {
-		// TODO 
+		// TODO
 
 	}
 
 	@Override
-	/**
+	/*
 	 * Takes care of the widget selections
 	 */
 	public void widgetSelected( SelectionEvent arg0 ) {
@@ -594,7 +628,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 					// Check the root
 					selectedItem.getParentItem().setChecked( true );
-					//Start it not grayed
+					// Start it not grayed
 					parent.setGrayed( false );
 
 					// Check to see if it was checked or unchecked
@@ -603,7 +637,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						// Go through it's siblings
 						for( TreeItem i : parent.getItems() ) {
 
-							// If it comes to a sibling that isn't selected the root is grayed
+							// If it comes to a sibling that isn't selected the
+							// root is grayed
 							if( !i.getChecked() ) {
 								parent.setGrayed( true );
 								break;
@@ -613,20 +648,34 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 					// It was unchecked
 					else {
-
+						parent.setChecked( false );
 						// Go through all the siblings
 						for( TreeItem i : parent.getItems() ) {
 
-							// if comes to one that is checked make the root grayed
+							// if comes to one that is checked make the root
+							// grayed
 							if( i.getChecked() ) {
+								parent.setChecked( true );
 								parent.setGrayed( true );
 								break;
 							}
 						}
 					}
 				}
-
 			}
+			else {
+				if( selectedItem.getParentItem() == null ) {
+					disableInfoLabels();
+				}
+				else {
+					if( selectedItem.getData() instanceof InstrumentationPoint ) {
+						fillInfoLabels( (InstrumentationPoint)selectedItem.getData() );
+					}
+					else
+						disableInfoLabels();
+				}
+			}
+
 		}
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
@@ -641,7 +690,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	}
 
 	@Override
-	/**
+	/*
 	 * If the text is modified in a textbox set a flag
 	 */
 	public void modifyText( ModifyEvent e ) {
