@@ -459,13 +459,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		ResourcesPlugin.getWorkspace();
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
-		IPath location = root.getLocation();
+		
 		Path tmpPath = (Path)root.getLocation();
 		ArrayList<SourceFile> sources = newFP.getFiles( tmpPath );
 
 		for( SourceFile sf : sources ) {
 			newFP.findInterestPoints( sf );
-
+			
 			TreeItem item = new TreeItem( _tree, SWT.NONE );
 			item.setText( sf.getName() );
 			for( InterestPoint ip : sf.getInterestingPoints() ) {

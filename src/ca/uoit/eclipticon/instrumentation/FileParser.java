@@ -22,7 +22,7 @@ import ca.uoit.eclipticon.data.SourceFile;
  */
 public class FileParser {
 
-	ArrayList<SequenceOrdering>	_sequence	= new ArrayList<SequenceOrdering>();	// The sequence of constructs
+	ArrayList<SequenceOrdering>	_sequence	= null;	// The sequence of constructs
 
 	/**
 	 * Will recursively acquire all the files under the root path, and return an arraylist
@@ -93,12 +93,12 @@ public class FileParser {
 		int sequenceNum = 0;
 		try {
 			if( bufReader.ready() ) {
-
+				 
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
-
+					
+					_sequence = new ArrayList<SequenceOrdering>();
 					// Handle appropriate synchronize construct if they reside on current line
-
 					// Synchronize
 					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK, sequenceNum );
 					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCK, sequenceNum );
@@ -168,22 +168,25 @@ public class FileParser {
 	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
 
 		ArrayList<SequenceOrdering> sortedOrder = new ArrayList<SequenceOrdering>(); // The sorted order
-		int lowestIndex = _sequence.size() + 1; // The lowest index of to be added (starts off higher then possible)
+		int lowestIndex = 0; // The lowest index of to be added (starts off higher then possible)
 		int index = 0; // The selected index to be added to the sortOrder next
-
+		int lowestChar = 0;
 		// Keep looping till all the interest points are accounted for
-		while( _sequence.size() != sortedOrder.size() ) {
-
+		while( _sequence.size() > 0 ) {
+			
+			lowestChar = _sequence.get(0).getCharacterPosition();
 			// Look at a single sequence object
 			for( SequenceOrdering singleSequence : _sequence ) {
-				if( singleSequence.getCharacterPosition() < lowestIndex ) {
+				
+				if( singleSequence.getCharacterPosition() < lowestChar ) {
 					lowestIndex = index;
 				}
 				index++;
 			}
 
 			// Add the next lowest interest point in order of sequence
-			sortedOrder.add( _sequence.get( index ) );
+			sortedOrder.add( _sequence.get( lowestIndex ) );
+			_sequence.remove( lowestIndex );
 		}
 
 		return sortedOrder;
@@ -202,8 +205,7 @@ public class FileParser {
 	 * @param syntax the syntax of the synchronization construct
 	 * @param sequenceNum the sequence number
 	 */
-	private void parseLineForConstructs( String curLine, int lineNumber, String construct, String syntax,
-			int sequenceNum ) {
+	private void parseLineForConstructs( String curLine, int lineNumber, String construct, String syntax, int sequenceNum ) {
 
 		int pos = 0; // The last character position
 		int currentPos = 0; // The current character position
