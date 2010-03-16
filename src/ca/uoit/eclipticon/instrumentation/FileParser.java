@@ -93,11 +93,11 @@ public class FileParser {
 		int sequenceNum = 0;
 		try {
 			if( bufReader.ready() ) {
-				 
+				_sequence = new ArrayList<SequenceOrdering>();
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
 					
-					_sequence = new ArrayList<SequenceOrdering>();
+					
 					// Handle appropriate synchronize construct if they reside on current line
 					// Synchronize
 					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK, sequenceNum );
