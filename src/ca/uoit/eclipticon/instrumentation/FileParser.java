@@ -22,7 +22,7 @@ import ca.uoit.eclipticon.data.SourceFile;
  */
 public class FileParser {
 
-	ArrayList<SequenceOrdering>	_sequence	= null;	// The sequence of constructs
+	ArrayList<SequenceOrdering>	_sequence	= new ArrayList<SequenceOrdering>();	// The sequence of constructs
 
 	/**
 	 * Will recursively acquire all the files under the root path, and return an arraylist
@@ -86,6 +86,9 @@ public class FileParser {
 		}
 		BufferedReader bufReader = new BufferedReader( fileReader );
 
+		// Create an annotation parser to parse the prevLine's annotations
+		AnnotationParser annotationParser = new AnnotationParser();
+		
 		// If bufferReader is ready start parsing the sourceFile
 		String curLine = "";
 		String prevLine = "";
@@ -93,10 +96,13 @@ public class FileParser {
 		int sequenceNum = 0;
 		try {
 			if( bufReader.ready() ) {
-				_sequence = new ArrayList<SequenceOrdering>();
+
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
 					
+					if (lineNum == 70){
+						int i = 0;
+					}
 					
 					// Handle appropriate synchronize construct if they reside on current line
 					// Synchronize
@@ -121,35 +127,45 @@ public class FileParser {
 					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE, sequenceNum );
 					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN, sequenceNum );
 					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE, sequenceNum );
+						
+					// If there are points found then figure out order and add the points
+					if( _sequence.size() > 0 ) {
 
+						// Fix the ordering of the interest points
+						ArrayList<SequenceOrdering> orderedPoints = correctSequenceOrdering();
+						
+						int sequenceNumber = 0;
+						
+						// For each point found, figure out if it is an instrumentation or interest point
+						for( SequenceOrdering singlePoint : orderedPoints ) {
+
+							// Figure out if this interest point was already annotated to be an instrumentation point
+							InstrumentationPoint instrumentationPoint = annotationParser.parseLineForAnnotations(
+									prevLine, lineNum, sequenceNumber, singlePoint
+											.getConstructType() );
+
+							// Check for a null value, if so then instrumentation point wasn't there (it is an interest point)
+							if( instrumentationPoint == null ) {
+
+								// Add the interesting points to the source file
+								source.addInterestingPoint( singlePoint.getInterestPoint() );
+							}
+							else {
+
+								// Add the instrumentation point to the source file
+								source.addInterestingPoint( instrumentationPoint );
+							}
+							
+							sequenceNum++;
+						}
+						
+						// Clear the array of points found
+						_sequence.clear(); 
+					}
+
+					// This line is completed, proceed to the next line
 					lineNum++;
 					prevLine = curLine; // Keep current line in case it has a PreemptionPoint annotation
-				}
-
-				// Fix the ordering of the interest points
-				ArrayList<SequenceOrdering> orderedPoints = correctSequenceOrdering();
-
-				// Create an annotation parser to parse the prevLine's annotations (if any)
-				AnnotationParser annotationParser = new AnnotationParser();
-
-				// For each point found, figure out if it is an instrumentation or interest point
-				for( SequenceOrdering singlePoint : orderedPoints ) {
-
-					// Figure out if this interest point was already annotated to be an instrumentation point
-					InstrumentationPoint instrumentationPoint = annotationParser.parseLineForAnnotations( prevLine,
-							lineNum, singlePoint.getCharacterPosition(), singlePoint.getConstructType() );
-
-					// Check for a null value, if so then instrumentation point wasn't there (it is an interest point)
-					if( instrumentationPoint == null ) {
-
-						// Add the interesting points to the source file
-						source.addInterestingPoint( singlePoint.getInterestPoint() );
-					}
-					else {
-
-						// Add the instrumentation point to the source file
-						source.addInterestingPoint( instrumentationPoint );
-					}
 				}
 			}
 		}
@@ -160,7 +176,7 @@ public class FileParser {
 	
 	/**
 	 * The sequence of interest points discovered is usually out of order, and thus needs 
-	 * re-ordering. This method will correct the sequence's ordering while retainning all the
+	 * re-ordering. This method will correct the sequence's ordering while retaining all the
 	 * additional metadata as found in the {@link SequenceOrdering} class.
 	 * 
 	 * @return the ordered arraylist of the sequence ordering
@@ -168,25 +184,34 @@ public class FileParser {
 	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
 
 		ArrayList<SequenceOrdering> sortedOrder = new ArrayList<SequenceOrdering>(); // The sorted order
-		int lowestIndex = 0; // The lowest index of to be added (starts off higher then possible)
-		int index = 0; // The selected index to be added to the sortOrder next
-		int lowestChar = 0;
-		// Keep looping till all the interest points are accounted for
-		while( _sequence.size() > 0 ) {
-			
-			lowestChar = _sequence.get(0).getCharacterPosition();
-			// Look at a single sequence object
-			for( SequenceOrdering singleSequence : _sequence ) {
-				
-				if( singleSequence.getCharacterPosition() < lowestChar ) {
-					lowestIndex = index;
-				}
-				index++;
-			}
 
-			// Add the next lowest interest point in order of sequence
-			sortedOrder.add( _sequence.get( lowestIndex ) );
-			_sequence.remove( lowestIndex );
+		// If more then one point then sort the points
+		if( _sequence.size() > 0 ) {
+			
+			int lowestIndex = 0; // The lowest index of to be added (starts off higher then possible)
+			int index = 0; // The selected index to be added to the sortOrder next
+			int lowestChar = 0;
+			
+			// Keep looping till all the interest points are accounted for
+			while( _sequence.size() > 0 ) {
+
+				lowestChar = _sequence.get( 0 ).getCharacterPosition();
+				// Look at a single sequence object
+				for( SequenceOrdering singleSequence : _sequence ) {
+
+					if( singleSequence.getCharacterPosition() < lowestChar ) {
+						lowestIndex = index;
+					}
+					index++;
+				}
+
+				// Add the next lowest interest point in order of sequence
+				sortedOrder.add( _sequence.get( lowestIndex ) );
+				_sequence.remove( lowestIndex );
+			}
+		}
+		else{ // If only one point found then add it
+			sortedOrder.add( _sequence.get( 0 ) );
 		}
 
 		return sortedOrder;

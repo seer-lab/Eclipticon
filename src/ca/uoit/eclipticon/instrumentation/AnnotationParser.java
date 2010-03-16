@@ -46,7 +46,7 @@ public class AnnotationParser {
 				while (_sequence != sequence) {
 					curLine = curLine.substring(curLine.indexOf("*/") + 2); // then delete the first annotation
 							
-					// now check if annoation exists again
+					// now check if annotation exists again
 					if(checkAnnotationExists(curLine) == false)
 						return null;
 					else
@@ -60,7 +60,7 @@ public class AnnotationParser {
 					_probability = parseProbability(params);
 					_low = 0;
 					_high = 0;
-					return new InstrumentationPoint(lineNumber + 1, sequence, construct, _type, _probability, _low, _high);
+					return new InstrumentationPoint(lineNumber, sequence, construct, _type, _probability, _low, _high);
 					
 				}
 				else { // if type is  0, default to sleep
@@ -68,12 +68,12 @@ public class AnnotationParser {
 					_low = parseLow(params);
 					_high = parseHigh(params);
 					_probability = parseProbability(params);
-					return new InstrumentationPoint(lineNumber + 1, sequence, construct, _type, _probability, _low, _high);
+					return new InstrumentationPoint(lineNumber, sequence, construct, _type, _probability, _low, _high);
 					
 				}
 				
 			} else { // no parameters exist, return default sleep InstrumentationPoint
-				return new InstrumentationPoint(lineNumber + 1, sequence, construct, _type, _probability, _low, _high);
+				return new InstrumentationPoint(lineNumber, sequence, construct, _type, _probability, _low, _high);
 			}
 		} else { // annotation does not exist
 			return null;
