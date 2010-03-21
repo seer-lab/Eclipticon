@@ -1,7 +1,5 @@
 package ca.uoit.eclipticon.instrumentation;
 
-import java.util.Random;
-
 import ca.uoit.eclipticon.Constants;
 
 /**
@@ -56,10 +54,7 @@ public class NoiseMaker {
 	 * @return the sleep statement
 	 */
 	private String createSleep( int low, int high ) {
-
-		Random rand = new Random();
-
-		return "try {Thread.sleep(" + ( rand.nextInt( high - low ) + low ) + ");} catch (Exception e) {};";
+		return "try{Thread.sleep((rand.nextInt(high-low)+low));}catch(Exception e){};";
 	}
 
 	/**
@@ -69,7 +64,7 @@ public class NoiseMaker {
 	 * @return the yield statement
 	 */
 	private String createYield() {
-		return "try {Thread.yield(" + ");} catch (Exception e) {};";
+		return "try{Thread.yield();}catch(Exception e){};";
 	}
 
 	/**
@@ -81,10 +76,6 @@ public class NoiseMaker {
 	 * @return the if statement that will decide if the instrument will occur
 	 */
 	private String getIfChance( int chance ) {
-
-		Random rand = new Random();
-		String randomNumber = String.valueOf( ( rand.nextInt( 100 - 0 ) + 0 ) );
-
-		return "if(" + randomNumber + " <= " + chance + ")";
+		return "if((rand.nextInt(100-0)+0)<=" + chance + ")";
 	}
 }

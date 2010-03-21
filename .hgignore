@@ -1,2 +1,3 @@
 relre:.metadata/*
 relre:bin/*
+relre:test/*
