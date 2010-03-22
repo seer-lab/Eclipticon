@@ -21,13 +21,15 @@ public class InstrumentationPoint extends InterestPoint {
 	 * @param line the line number 
 	 * @param instance the instance number location
 	 * @param construct the construct type
+	 * @param constructSyntax the construct syntax
 	 * @param type the instrumentation type
 	 * @param prob the probability of the instrumentation point
 	 * @param low the low delay range
 	 * @param high the high delay range
 	 */
-	public InstrumentationPoint( int line, int instance, String construct, int type, int prob, int low, int high ) {
-		super( line, instance, construct );
+	public InstrumentationPoint( int line, int instance, String construct, String constructSyntax, int type, int prob,
+			int low, int high ) {
+		super( line, instance, construct, constructSyntax );
 		_type = type;
 		_probability = prob;
 		_low = low;

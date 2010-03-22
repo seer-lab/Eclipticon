@@ -3,21 +3,34 @@ package ca.uoit.eclipticon.instrumentation;
 import ca.uoit.eclipticon.Constants;
 
 /**
- * This class will generate sleep and yield noise, as well as create
- * the statement complete with a probability of activating. A simple try
- * and catch statement is included to avoid any Exception.
+ * This class will provide the proper setup required for the generated noise statements,
+ * the use of the random numbers. The creation of noise statements for thread sleep and 
+ * yield delays are also created here.
  * 
  * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
  */
 public class NoiseMaker {
 
-	// Default constructor
 	/**
 	 * Instantiates a new noise maker.
 	 */
-	public NoiseMaker(){
+	public NoiseMaker() {
 	}
 	
+	/**
+	 * Creates the random import statement needed for the random method calls in the noise.
+	 */
+	public String makeRandImport() {
+		return "import java.util.Random;";
+	}
+
+	/**
+	 * Creates the random variable to be used for the noise making random values
+	 */
+	public String makeRandVariable() {
+		return "Random _____rand0123456789_____ = new Random();";
+	}
+
 	/**
 	 * Method will create a noise statement given the noise type and delay ranges.
 	 * 
@@ -33,10 +46,10 @@ public class NoiseMaker {
 		String noise = null;
 
 		// Create the noise statement based on the type of noise to make
-		if (type == Constants.SLEEP){
+		if( type == Constants.SLEEP ) {
 			noise = getIfChance( chance ) + createSleep( low, high );
 		}
-		else if (type == Constants.YEILD){
+		else if( type == Constants.YEILD ) {
 			noise = getIfChance( chance ) + createYield();
 		}
 
@@ -54,7 +67,7 @@ public class NoiseMaker {
 	 * @return the sleep statement
 	 */
 	private String createSleep( int low, int high ) {
-		return "try{Thread.sleep((rand.nextInt(high-low)+low));}catch(Exception e){};";
+		return "try{Thread.sleep((_____rand0123456789_____.nextInt(high-low)+low));}catch(Exception e){};";
 	}
 
 	/**
@@ -76,6 +89,6 @@ public class NoiseMaker {
 	 * @return the if statement that will decide if the instrument will occur
 	 */
 	private String getIfChance( int chance ) {
-		return "if((rand.nextInt(100-0)+0)<=" + chance + ")";
+		return "if((_____rand0123456789_____.nextInt(100-0)+0)<=" + chance + ")";
 	}
 }

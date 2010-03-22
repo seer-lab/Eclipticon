@@ -18,7 +18,7 @@ public class AnnotationParser {
 	private int _low = 100;
 	private int _high = 1000;
 	private int _probability = 100;
-	
+
 	/**
 	 * The parseLineForAnnotations method accepts a line as input and extracts
 	 * the parameters. It stores those parameter values in an
@@ -29,11 +29,13 @@ public class AnnotationParser {
 	 * @param lineNumber The line number the annotation is found on. NOT the line the concurrency mechanism is found on.
 	 * @param sequence Represents the ordering if multiple concurrency mechanisms occur on one line
 	 * @param construct I.e. a synchronize, barrier, latch, or semaphore
+	 * @param constructSyntax The syntax that was used to find the construct
 	 * 
 	 * @return {@link InstrumentationPoint}
 	 */
-	InstrumentationPoint parseLineForAnnotations( String curLine, int lineNumber, int sequence, String construct) {
-		
+	InstrumentationPoint parseLineForAnnotations( String curLine, int lineNumber, int sequence, String construct,
+			String consturctSyntax ) {
+
 		//check that annotation exists
 		if (checkAnnotationExists(curLine)) { // if true
 		
@@ -52,30 +54,35 @@ public class AnnotationParser {
 					else
 						_sequence = parseSequence(curLine);
 				}
-				
-				_type = parseType(params);
+
+				_type = parseType( params );
 				// branch here, because sleep and yield require different syntax
-				if (_type == 1) { // if type is yield
-					
-					_probability = parseProbability(params);
+				if( _type == 1 ) { // if type is yield
+
+					_probability = parseProbability( params );
 					_low = 0;
 					_high = 0;
-					return new InstrumentationPoint(lineNumber, sequence, construct, _type, _probability, _low, _high);
-					
+					return new InstrumentationPoint( lineNumber, sequence, construct, consturctSyntax, _type,
+							_probability, _low, _high );
+
 				}
-				else { // if type is  0, default to sleep
-					
-					_low = parseLow(params);
-					_high = parseHigh(params);
-					_probability = parseProbability(params);
-					return new InstrumentationPoint(lineNumber, sequence, construct, _type, _probability, _low, _high);
-					
+				else { // if type is 0, default to sleep
+
+					_low = parseLow( params );
+					_high = parseHigh( params );
+					_probability = parseProbability( params );
+					return new InstrumentationPoint( lineNumber, sequence, construct, consturctSyntax, _type,
+							_probability, _low, _high );
+
 				}
-				
-			} else { // no parameters exist, return default sleep InstrumentationPoint
-				return new InstrumentationPoint(lineNumber, sequence, construct, _type, _probability, _low, _high);
+
 			}
-		} else { // annotation does not exist
+			else { // no parameters exist, return default sleep InstrumentationPoint
+				return new InstrumentationPoint( lineNumber, sequence, construct, consturctSyntax, _type, _probability,
+						_low, _high );
+			}
+		}
+		else { // annotation does not exist
 			return null;
 		}
 	}

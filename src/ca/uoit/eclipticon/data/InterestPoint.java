@@ -13,21 +13,24 @@ package ca.uoit.eclipticon.data;
  */
 public class InterestPoint {
 
-	private int		_line		= 0;	// The line number this point is located at
-	private int		_sequence	= 0;	// The sequence number of in respect to the other interest points on this line
-	private String	_construct	= null; // The synchronization construct type of this interest point
+	private int		_line				= 0;	// The line number this point is located at
+	private int		_sequence			= 0;	// The sequence number of the interest points on this line
+	private String	_construct			= null; // The synchronization construct type of this interest point
+	private String	_constructSyntax	= null; // The synchronization construct type of this interest point
 
 	/**
 	 * Constructor for instantiating an interest point that will set the variables for it.
 	 * 
 	 * @param line the line number
 	 * @param sequence the sequence number location
-	 * @param construct the constructor type
+	 * @param construct the synchronization construct type
+	 * @param constructSyntax the synchronization construct syntax
 	 */
-	public InterestPoint( int line, int sequence, String construct ) {
+	public InterestPoint( int line, int sequence, String construct, String constructSyntax ) {
 		_line = line;
 		_sequence = sequence;
 		_construct = construct;
+		_constructSyntax = constructSyntax;
 	}
 
 	/**
@@ -82,5 +85,23 @@ public class InterestPoint {
 	 */
 	public void setConstruct( String construct ) {
 		_construct = construct;
+	}
+
+	/**
+	 * Gets the synchronization construct syntax of the interest point.
+	 * 
+	 * @return the synchronization construct syntax
+	 */
+	public String getConstructSyntax() {
+		return _constructSyntax;
+	}
+
+	/**
+	 * Sets the synchronization construct syntax of this interesting point.
+	 * 
+	 * @param constructSyntax
+	 */
+	public void setConstructSyntax( String constructSyntax ) {
+		_constructSyntax = constructSyntax;
 	}
 }

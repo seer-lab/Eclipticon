@@ -22,7 +22,7 @@ import ca.uoit.eclipticon.data.SourceFile;
  */
 public class FileParser {
 
-	ArrayList<SequenceOrdering>	_sequence	= new ArrayList<SequenceOrdering>();	// The sequence of constructs
+	private ArrayList<SequenceOrdering>	_sequence	= new ArrayList<SequenceOrdering>();	// Sequence of constructs
 
 	/**
 	 * Will recursively acquire all the files under the root path, and return an arraylist
@@ -70,7 +70,8 @@ public class FileParser {
 
 	/**
 	 * This method will find all the potential synchronization constructs within
-	 * the current source file, these points are then turned into {@link InterestPoint}.
+	 * the current source file, these points are then turned into {@link InterestPoint}
+	 * and are attached to the source file.
 	 * 
 	 * @param source the {@link SourceFile} of interest
 	 */
@@ -99,10 +100,6 @@ public class FileParser {
 
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
-					
-					if (lineNum == 70){
-						int i = 0;
-					}
 					
 					// Handle appropriate synchronize construct if they reside on current line
 					// Synchronize
@@ -137,18 +134,18 @@ public class FileParser {
 						int sequenceNumber = 0;
 						
 						// For each point found, figure out if it is an instrumentation or interest point
-						for( SequenceOrdering singlePoint : orderedPoints ) {
+						for( SequenceOrdering sequencePoint : orderedPoints ) {
 
 							// Figure out if this interest point was already annotated to be an instrumentation point
 							InstrumentationPoint instrumentationPoint = annotationParser.parseLineForAnnotations(
-									prevLine, lineNum, sequenceNumber, singlePoint
-											.getConstructType() );
+									prevLine, lineNum, sequenceNumber, sequencePoint.getInterestPoint().getConstruct(),
+									sequencePoint.getInterestPoint().getConstructSyntax() );
 
 							// Check for a null value, if so then instrumentation point wasn't there (it is an interest point)
 							if( instrumentationPoint == null ) {
 
 								// Add the interesting points to the source file
-								source.addInterestingPoint( singlePoint.getInterestPoint() );
+								source.addInterestingPoint( sequencePoint.getInterestPoint() );
 							}
 							else {
 
@@ -243,10 +240,10 @@ public class FileParser {
 			if( ( currentPos = curLine.indexOf( syntax, pos ) ) != -1 ) {
 
 				// A construct is found, create an interest point
-				InterestPoint interestingPoint = new InterestPoint( lineNumber, sequenceNum, construct );
+				InterestPoint interestingPoint = new InterestPoint( lineNumber, sequenceNum, construct, syntax );
 
 				// Add to the _sequence, the point and the character position
-				_sequence.add( new SequenceOrdering( interestingPoint, currentPos, construct ) );
+				_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
 				sequenceNum++;
 
 				pos = currentPos + syntax.length();
@@ -258,15 +255,15 @@ public class FileParser {
 	}
 
 	/**
-	 * This inner class is a data class used to hold additional metadata with an {@link InterestPoint}.
+	 * This inner class is a data class used to hold additional metadata such as the character position that the
+	 * {@link InterestPoint} was found at in the source line.
 	 * 
 	 * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
 	 */
 	private class SequenceOrdering {
 
-		private InterestPoint	interestPoint		= null; // An interest point
-		private int				characterPosition	= 0;	// The character position on the line
-		private String			constructType		= null; // The construct type
+		private InterestPoint	_interestPoint		= null; // An interest point
+		private int				_characterPosition	= 0;	// The character position on the line
 
 		/**
 		 * Constructor use to instantiate a {@link SequenceOrdering} data class.
@@ -275,10 +272,9 @@ public class FileParser {
 		 * @param characterPosition the character position on the line
 		 * @param constructType the construct type
 		 */
-		public SequenceOrdering( InterestPoint interestPoint, int characterPosition, String constructType ) {
-			this.interestPoint = interestPoint;
-			this.characterPosition = characterPosition;
-			this.constructType = constructType;
+		public SequenceOrdering( InterestPoint interestPoint, int characterPosition ) {
+			_interestPoint = interestPoint;
+			_characterPosition = characterPosition;
 		}
 
 		/**
@@ -287,7 +283,7 @@ public class FileParser {
 		 * @return the {@link InterestPoint}
 		 */
 		public InterestPoint getInterestPoint() {
-			return interestPoint;
+			return _interestPoint;
 		}
 
 		/**
@@ -296,16 +292,7 @@ public class FileParser {
 		 * @return the character position
 		 */
 		public int getCharacterPosition() {
-			return characterPosition;
-		}
-
-		/**
-		 * Gets the construct type.
-		 * 
-		 * @return the construct type
-		 */
-		public String getConstructType() {
-			return constructType;
+			return _characterPosition;
 		}
 	}
 }

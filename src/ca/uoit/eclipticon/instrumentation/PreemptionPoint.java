@@ -18,7 +18,6 @@ package ca.uoit.eclipticon.instrumentation;
  * 
  * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
  */
-
 public @interface PreemptionPoint {
 
 	int sequence() default 0;
