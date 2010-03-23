@@ -5,11 +5,16 @@ Bundle-SymbolicName: ca.uoit.eclipticon;singleton:=true
 Bundle-Version: 0.1
 Bundle-Activator: ca.uoit.eclipticon.gui.Activator
 Bundle-Vendor: UOIT
-Require-Bundle: org.eclipse.ui,
- org.eclipse.core.runtime,
- org.eclipse.core.resources;bundle-version="3.4.0"
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.jdt,
+ org.eclipse.jdt.ui,
+ org.eclipse.jdt.core,
+ org.eclipse.ui,
+ org.eclipse.core.resources,
+ org.eclipse.ui.ide
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Import-Package: junit.framework,
+ org.eclipse.core.filesystem,
  org.junit
 Bundle-ClassPath: .

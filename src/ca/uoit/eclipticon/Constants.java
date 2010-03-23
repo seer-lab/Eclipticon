@@ -41,5 +41,5 @@ public final class Constants {
 
 	/** These are the types of noise */
 	static public int		SLEEP								= 0;
-	static public int		YEILD								= 1;
+	static public int		YIELD								= 1;
 }

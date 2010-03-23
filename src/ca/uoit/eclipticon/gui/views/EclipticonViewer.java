@@ -1,5 +1,7 @@
 package ca.uoit.eclipticon.gui.views;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import org.eclipse.core.resources.IWorkspace;
@@ -37,10 +39,12 @@ import org.eclipse.swt.widgets.TreeItem;
 
 import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.AutomaticConfiguration;
+import ca.uoit.eclipticon.data.AutomaticConfigurationHandler;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
 import ca.uoit.eclipticon.instrumentation.FileParser;
+import ca.uoit.eclipticon.instrumentation.EditorHandler;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
 
@@ -62,10 +66,10 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	Scale		_scaleSync			= null;
 	Scale		_scaleSemaphores	= null;
 	Scale		_scaleLatches		= null;
-	Boolean		_test				= true;
+	Boolean		_test				= false;
 	Tree		_tree				= null;
-
-	// AutomaticConfigurationHandler _ach = null;
+	Boolean		_modified			= false;
+	AutomaticConfigurationHandler _ach = null;
 
 	public EclipticonViewer( Composite parent, int i ) {
 		// TODO Auto-generated constructor stub
@@ -88,6 +92,31 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		disableInfoLabels();
 		fillTree();
 		// Initialize the models
+		
+		
+		_ach = new AutomaticConfigurationHandler();
+
+
+		try {
+			// Read in their XML's
+			//_ach.readXml();
+			
+			_ach.readXml();
+			// Populate the table and the Auto Tab
+			populateAutoTab( _ach.getConfiguration() );
+
+			// Initialize the tables selection to the first item and fill the info at the bottom
+
+		}
+		catch( FileNotFoundException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		catch( IOException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 
 		// Select the Manual Tab
 		_folderTab.setSelection( 0 );
@@ -472,6 +501,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			if( sf.getInterestingPoints().size() > 0 || _test) {
 				TreeItem item = new TreeItem( _tree, SWT.NONE );
 				item.setText( sf.getName() );
+				item.setData( sf );
 				for( InterestPoint ip : sf.getInterestingPoints() ) {
 					TreeItem subItem = new TreeItem( item, SWT.NONE );
 					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), "" };
@@ -483,7 +513,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						InstrumentationPoint tempIP = (InstrumentationPoint)ip;
 						if( tempIP.getType() == Constants.SLEEP )
 							subItem.setText( 2, "Sleep" );
-						else if( tempIP.getType() == Constants.YEILD )
+						else if( tempIP.getType() == Constants.YIELD )
 							subItem.setText( 2, "Yield" );
 						someChecked = true;
 					}
@@ -583,7 +613,19 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	@Override
 	public void widgetDefaultSelected( SelectionEvent arg0 ) {
 		// TODO
-
+		if( arg0.item instanceof TreeItem ) {
+			TreeItem selectedItem = (TreeItem)arg0.item;
+			Object data = selectedItem.getData();
+			if (data instanceof SourceFile){
+				EditorHandler eH = new EditorHandler();
+				SourceFile sFSelected = (SourceFile) data;
+				eH.openFile( sFSelected.getPath());
+			}
+			else if (data instanceof InterestPoint){
+				InterestPoint iPSelected = (InterestPoint) data;
+			}
+				
+		}
 	}
 
 	@Override
@@ -689,6 +731,62 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		else if( arg0.widget == _cmbType ) {
 
 		}
+		else if( arg0.widget == _sleepYield ) {
+			// If it was moved set the flag
+			if( _sleepYield.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setYieldProbability( _sleepYield.getSelection() );
+				_modified = true;
+			}
+		}
+		
+		// If the Widget Selected is a Barrier Scale
+		else if( arg0.widget == _scaleBarrier ) {
+			// If it was moved set the flag
+			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setBarrierProbability( _scaleBarrier.getSelection() );
+				_modified = true;
+			}
+		}
+		
+		// If the Widget Selected is a Latch Scale
+		else if( arg0.widget == _scaleLatches ) {
+			// If it was moved set the flag
+			if( _scaleLatches.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setLatchProbability( _scaleLatches.getSelection() );
+				_modified = true;
+			}
+		}
+		
+		// If the Widget Selected is a Semaphore Scale
+		else if( arg0.widget == _scaleSemaphores ) {
+			// If it was moved set the flag
+			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setSemaphoreProbability( _scaleSemaphores.getSelection() );
+				_modified = true;
+			}
+		}
+		
+		// If the Widget Selected is a Synchronization Scale
+		else if( arg0.widget == _scaleSync ) {
+			// If it was moved set the flag
+			if( _scaleSync.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+				_ach.getConfiguration().setSynchronizeProbability( _scaleSync.getSelection() );
+				_modified = true;
+			}
+		}
+		
+		// If the flag has been raised update the Auto Config Scale
+		if( _modified ) {
+			try {
+				_ach.writeXml();
+			}
+			catch( IOException e ) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			_modified = false;
+		}
+
 
 	}
 
@@ -698,6 +796,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 */
 	public void modifyText( ModifyEvent e ) {
 		// TODO Auto-generated method stub
+		_modified = true;
 
 	}
 

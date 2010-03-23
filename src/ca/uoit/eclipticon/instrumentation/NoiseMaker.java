@@ -49,7 +49,7 @@ public class NoiseMaker {
 		if( type == Constants.SLEEP ) {
 			noise = getIfChance( chance ) + createSleep( low, high );
 		}
-		else if( type == Constants.YEILD ) {
+		else if( type == Constants.YIELD ) {
 			noise = getIfChance( chance ) + createYield();
 		}
 

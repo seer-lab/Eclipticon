@@ -1,21 +1,16 @@
 package ca.uoit.eclipticon.data;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import ca.uoit.eclipticon.gui.Activator;
 
@@ -30,15 +25,17 @@ public class AutomaticConfigurationHandler {
 
 	private AutomaticConfiguration	_configurationData	= null; // The configuration data for automatic configuration
 	private String					_xmlLocation		= null; // The path of the XML file
-	
+	private int						_position			= 0;
+	private String					_input				= "";
+
 	/**
 	 * The constructor is used to acquire the automatic configuration's XML location 
 	 * from the plugin's metadata folder to restore previous settings.
 	 */
 	public AutomaticConfigurationHandler() {
-		_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "AutomaticConfig.XML";
+		_xmlLocation = Activator.getDefault().getStateLocation().addTrailingSeparator().toString() + "AutomaticConfig.txt";
 	}
-	
+
 	/**
 	 * Sets the configuration data for the automatic instrumentation.
 	 * 
@@ -51,9 +48,7 @@ public class AutomaticConfigurationHandler {
 	 * @param latchProbability the latch probability
 	 * @param semaphoreProbability the semaphore probability
 	 */
-	public void setConfigurationData( int lowDelayRange, int highDelayRange, int sleepProbability,
-			int yieldProbability, int synchronizeProbability, int barrierProbability,
-			int latchProbability, int semaphoreProbability ) {
+	public void setConfigurationData( int lowDelayRange, int highDelayRange, int sleepProbability, int yieldProbability, int synchronizeProbability, int barrierProbability, int latchProbability, int semaphoreProbability ) {
 
 		// If the configuration data object is not initialized then do it now
 		if( _configurationData == null ) {
@@ -81,44 +76,31 @@ public class AutomaticConfigurationHandler {
 		if( _configurationData == null ) {
 			_configurationData = new AutomaticConfiguration();
 		}
-		
+		_position = 0;
 		// Open a new file at the plugin location
 		// TODO: Handle file not found.
-		File file = new File( _xmlLocation );
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		DocumentBuilder db;
 		try {
-			db = dbf.newDocumentBuilder();
-			Document doc = db.parse( file );
-			doc.getDocumentElement().normalize();
-
-			//Get a list of Instrumentation Points
-			NodeList automicaticConfigTopNode = doc.getElementsByTagName( "AutomaticConfig" );
-			Node currentNode = automicaticConfigTopNode.item( 0 );
-			
-			// Read in the values for the current Instrumentation Point
-			if( currentNode.getNodeType() == Node.ELEMENT_NODE ) {
-
-				Element autoConfigElement = (Element)currentNode;
-				_configurationData.setBarrierProbability( Integer.valueOf( getNodeValue( autoConfigElement, "barrierProbability" ) ) );
-				_configurationData.setLowDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "lowDelayRange" ) ) );
-				_configurationData.setHighDelayRange( Integer.valueOf( getNodeValue( autoConfigElement, "highDelayRange" ) ) );
-				_configurationData.setSleepProbability( Integer.valueOf( getNodeValue( autoConfigElement, "sleepProbability" ) ) );
-				_configurationData.setYieldProbability( Integer.valueOf( getNodeValue( autoConfigElement, "yieldProbability" ) ) );
-				_configurationData.setSynchronizeProbability( Integer.valueOf( getNodeValue( autoConfigElement, "synchronizeChance" ) ) );
-				_configurationData.setLatchProbability( Integer.valueOf( getNodeValue( autoConfigElement, "latchChance" ) ) );
-				_configurationData.setSemaphoreProbability( Integer.valueOf( getNodeValue( autoConfigElement, "semaphoreChance" ) ) );
-			}
-
-		}
-		catch( ParserConfigurationException e ) {
-			e.printStackTrace();
-		}
-		catch( SAXException e ) {
-			e.printStackTrace();
+			File file = new File( _xmlLocation );
+			BufferedReader bufferedReader = new BufferedReader( new FileReader( file ) );
+			_input = bufferedReader.readLine();
 		}
 		catch( IOException e ) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+
+		//Get a list of Instrumentation Points
+
+		// Read in the values for the current Instrumentation Point
+		if( _input.length() > 0 ) {
+			_configurationData.setBarrierProbability( Integer.valueOf( getNextValue() ) );
+			_configurationData.setLowDelayRange( Integer.valueOf( getNextValue() ) );
+			_configurationData.setHighDelayRange( Integer.valueOf( getNextValue() ) );
+			_configurationData.setSleepProbability( Integer.valueOf( getNextValue() ) );
+			_configurationData.setYieldProbability( Integer.valueOf( getNextValue() ) );
+			_configurationData.setSynchronizeProbability( Integer.valueOf( getNextValue() ) );
+			_configurationData.setLatchProbability( Integer.valueOf( getNextValue() ) );
+			_configurationData.setSemaphoreProbability( Integer.valueOf( getNextValue() ) );
 		}
 
 	}
@@ -129,11 +111,16 @@ public class AutomaticConfigurationHandler {
 	 * @param strTag the tag for the element to be found
 	 * @return a node from an element using the tag
 	 */
-	private String getNodeValue( Element autoConfigElement, String strTag ) {
-		NodeList nodeList = autoConfigElement.getElementsByTagName( strTag );
-		Element idElement = (Element)nodeList.item( 0 );
-		NodeList node = idElement.getChildNodes();
-		return node.item( 0 ).getNodeValue();
+	private String getNextValue() {
+		String val = "";
+		if( _position < _input.length() ) {
+			int i = _input.indexOf( ",", _position );
+			val = _input.substring( _position, i );
+			_position = i + 1;
+			System.out.println( val );
+		}
+
+		return val;
 	}
 
 	/**
@@ -145,9 +132,7 @@ public class AutomaticConfigurationHandler {
 
 		if( _configurationData != null ) {
 			// Compile the XML for the Instrumentation Points
-			String xml = "<list>\n";
-
-			xml = xml.concat( "<AutomaticConfig>\n\r" );
+			String xml = "";
 			xml = xml.concat( createElement( "barrierChance", _configurationData.getBarrierProbability() ) );
 			xml = xml.concat( createElement( "lowDelayRange", _configurationData.getLowDelayRange() ) );
 			xml = xml.concat( createElement( "highDelayRange", _configurationData.getHighDelayRange() ) );
@@ -156,11 +141,9 @@ public class AutomaticConfigurationHandler {
 			xml = xml.concat( createElement( "synchronizeChance", _configurationData.getSynchronizeProbability() ) );
 			xml = xml.concat( createElement( "latchChance", _configurationData.getLatchProbability() ) );
 			xml = xml.concat( createElement( "semaphoreChance", _configurationData.getSemaphoreProbability() ) );
-			xml = xml.concat( "</AutomaticConfig>\n\r" );
 
-			xml = xml.concat( "</list>" );
 			File newFile = new File( _xmlLocation );
-			
+
 			// Create a new file if it doesn't exist
 			newFile.createNewFile();
 
@@ -182,7 +165,7 @@ public class AutomaticConfigurationHandler {
 	 * @return the XML element
 	 */
 	private String createElement( String tag, String value ) {
-		String markup = "<" + tag + ">" + value + "</" + tag + ">\n\r";
+		String markup = value + ",";
 		return markup;
 	}
 
