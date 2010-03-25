@@ -67,7 +67,7 @@ public class NoiseMaker {
 	 * @return the sleep statement
 	 */
 	private String createSleep( int low, int high ) {
-		return "try{Thread.sleep((_____rand0123456789_____.nextInt(high-low)+low));}catch(Exception e){};";
+		return "try{Thread.sleep((_____rand0123456789_____.nextInt(" + high + "-" + low + ")" +"+" + low + "));}catch(Exception e){};";
 	}
 
 	/**
