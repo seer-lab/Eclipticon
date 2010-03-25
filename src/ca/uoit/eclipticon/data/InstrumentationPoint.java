@@ -19,7 +19,7 @@ public class InstrumentationPoint extends InterestPoint {
 	 * Constructor for instantiating an instrumentation point that will set the variables for it.
 	 * 
 	 * @param line the line number 
-	 * @param instance the instance number location
+	 * @param sequence the sequence number location
 	 * @param construct the construct type
 	 * @param constructSyntax the construct syntax
 	 * @param type the instrumentation type
@@ -27,9 +27,9 @@ public class InstrumentationPoint extends InterestPoint {
 	 * @param low the low delay range
 	 * @param high the high delay range
 	 */
-	public InstrumentationPoint( int line, int instance, String construct, String constructSyntax, int type, int prob,
+	public InstrumentationPoint( int line, int sequence, String construct, String constructSyntax, int type, int prob,
 			int low, int high ) {
-		super( line, instance, construct, constructSyntax );
+		super( line, sequence, construct, constructSyntax );
 		_type = type;
 		_probability = prob;
 		_low = low;
