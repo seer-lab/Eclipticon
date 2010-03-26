@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 
 import org.eclipse.core.runtime.Path;
@@ -89,79 +91,101 @@ public class FileParser {
 
 		// Create an annotation parser to parse the prevLine's annotations
 		AnnotationParser annotationParser = new AnnotationParser();
-		
+
+		String curLine = ""; // The current line
+		String prevLine = ""; // The previous line (has annotation possibly)
+		String nextLine = ""; // The next line if needed to move forward
+		int lineNum = 1; // The active line number
+		int currentLineNum = 1; // The current line number
+		int synchronizedPosition = -1; // The last found synchronized character position on the line
+		boolean synchronizedOnSameLine = true; // If the synchronized is still on the same line
+
 		// If bufferReader is ready start parsing the sourceFile
-		String curLine = "";
-		String prevLine = "";
-		int lineNum = 1;
-		int sequenceNum = 0;
 		try {
 			if( bufReader.ready() ) {
 
 				// For as long as there are lines left to read; acquire current one
 				while( ( curLine = bufReader.readLine() ) != null ) {
-					
+
+					// Due to new line
+					synchronizedOnSameLine = true;
+					currentLineNum = lineNum;
+
 					// Handle appropriate synchronize construct if they reside on current line
-					// Synchronize
-					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCK, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCKINTERRUPTIBLY, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_TRYLOCK, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_UNLOCK, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_NEWCONDITION, sequenceNum );
-					
-					// Latch
-					parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_COUNTDOWN, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_AWAIT, sequenceNum );
-										
-					// Barrier
-					parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_RESET, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_AWAIT, sequenceNum );
-					
-					// Semaphore
-					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIREUNINTERRUPTIBLY, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN, sequenceNum );
-					parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE, sequenceNum );
-						
+					handleFindingConstructs( curLine, currentLineNum );
+
+					while( synchronizedOnSameLine ) {
+
+						synchronizedPosition = findNextSynchronized( curLine, currentLineNum, synchronizedPosition );
+
+						if( synchronizedPosition > -1 ) { // Synchronized is found
+
+							// Check current line for a terminating character after the syntax
+							int typeFound = determineSynchronizedType( curLine, synchronizedPosition
+									+ Constants.SYNCHRONIZE_BLOCK.length() );
+
+							// Keep looping till a delimiter for the synchronized is found
+							while( typeFound == 0 ) {
+								nextLine = bufReader.readLine();
+								lineNum++;
+								synchronizedPosition = 1; // Reset since new line
+								typeFound = determineSynchronizedType( nextLine, synchronizedPosition );
+							}
+
+							// The synchronized type is a block
+							if( typeFound == 1 ) {
+
+								// If the lines are different then we stop checking
+								if( currentLineNum != lineNum ) {
+									synchronizedOnSameLine = false;
+								}
+							}
+							else { // Method is found
+								// Ignore
+							}
+						}
+						else { // Synchronized is not found, exit
+							synchronizedOnSameLine = false;
+						}
+					}
+
 					// If there are points found then figure out order and add the points
 					if( _sequence.size() > 0 ) {
 
 						// Fix the ordering of the interest points
 						ArrayList<SequenceOrdering> orderedPoints = correctSequenceOrdering();
-						
 						int sequenceNumber = 0;
-						
+
 						// For each point found, figure out if it is an instrumentation or interest point
 						for( SequenceOrdering sequencePoint : orderedPoints ) {
 
 							// Figure out if this interest point was already annotated to be an instrumentation point
 							InstrumentationPoint instrumentationPoint = annotationParser.parseLineForAnnotations(
-									prevLine, lineNum, sequenceNumber, sequencePoint.getInterestPoint().getConstruct(),
-									sequencePoint.getInterestPoint().getConstructSyntax() );
+									prevLine, currentLineNum, sequenceNumber, sequencePoint.getInterestPoint()
+											.getConstruct(), sequencePoint.getInterestPoint().getConstructSyntax() );
+							sequenceNumber++;
 
-							// Check for a null value, if so then instrumentation point wasn't there (it is an interest point)
+							// Check for a null value, if so then instrumentation point wasn't there (it is an interest
+							// point)
 							if( instrumentationPoint == null ) {
 
-								// Add the interesting points to the source file
 								source.addInterestingPoint( sequencePoint.getInterestPoint() );
 							}
 							else {
 
-								// Add the instrumentation point to the source file
 								source.addInterestingPoint( instrumentationPoint );
 							}
-							
-							sequenceNum++;
 						}
-						
-						// Clear the array of points found
-						_sequence.clear(); 
+						_sequence.clear();
 					}
 
-					// This line is completed, proceed to the next line
-					lineNum++;
+					// If both line numbers are the same then we didn't move due to the synchronized
+					if( currentLineNum == lineNum ) {
+						lineNum++;
+					}
+					else { // We moved due to the synchronized and the line needs not increment
+						currentLineNum = lineNum;
+					}
 					prevLine = curLine; // Keep current line in case it has a PreemptionPoint annotation
 				}
 			}
@@ -170,48 +194,117 @@ public class FileParser {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
-	 * The sequence of interest points discovered is usually out of order, and thus needs 
-	 * re-ordering. This method will correct the sequence's ordering while retaining all the
-	 * additional metadata as found in the {@link SequenceOrdering} class.
+	 * This method will find the next occurrence from the last synchronized position for a synchronized
+	 * block (syntax) and will add this occurrence to the _sequence arraylist.
 	 * 
-	 * @return the ordered arraylist of the sequence ordering
+	 * @param curLine the current line that is being checked
+	 * @param currentLineNum the current line number
+	 * @param synchronizedPosition the last position of a found synchronized block on this line
+	 * @return the character position a found synchronized block, or -1 if none are found
 	 */
-	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
+	private int findNextSynchronized( String curLine, int currentLineNum, int synchronizedPosition ) {
 
-		ArrayList<SequenceOrdering> sortedOrder = new ArrayList<SequenceOrdering>(); // The sorted order
+		int pos = synchronizedPosition + 1; // The last character position
+		int currentPos = 0; // The current character position
+		boolean stillMore = true; // Flag if there are more relevant syntax
 
-		// If more then one point then sort the points
-		if( _sequence.size() > 0 ) {
-			
-			int lowestIndex = 0; // The lowest index of to be added (starts off higher then possible)
-			int index = 0; // The selected index to be added to the sortOrder next
-			int lowestChar = 0;
-			
-			// Keep looping till all the interest points are accounted for
-			while( _sequence.size() > 0 ) {
+		// Loop for as long as there is relevant syntax
+		while( stillMore ) {
 
-				lowestChar = _sequence.get( 0 ).getCharacterPosition();
-				// Look at a single sequence object
-				for( SequenceOrdering singleSequence : _sequence ) {
+			// Keep going unless no more constructs are found
+			if( ( currentPos = curLine.indexOf( Constants.SYNCHRONIZE_BLOCK, pos ) ) != -1 ) {
 
-					if( singleSequence.getCharacterPosition() < lowestChar ) {
-						lowestIndex = index;
-					}
-					index++;
-				}
-
-				// Add the next lowest interest point in order of sequence
-				sortedOrder.add( _sequence.get( lowestIndex ) );
-				_sequence.remove( lowestIndex );
+				// A construct is found, create an interest point
+				InterestPoint interestingPoint = new InterestPoint( currentLineNum, _sequence.size(),
+						Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK );
+				_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+				pos = currentPos + Constants.SYNCHRONIZE_BLOCK.length();
+				break; // Exit since we found a synchronized block and need to handle it appropriately
+			}
+			else {
+				stillMore = false;
 			}
 		}
-		else{ // If only one point found then add it
-			sortedOrder.add( _sequence.get( 0 ) );
-		}
+		return currentPos;
+	}
 
-		return sortedOrder;
+	/**
+	 * Using the current line and the last synchronized syntax position, an attempt of finding
+	 * the type of synchronized is carried out. If the next valid character is found to be a '('
+	 * then this represents a synchronized block, other wise if any other non-whitespace character
+	 * is found then a synchronized method was found. In the situation where nothing is found then 
+	 * the next line needs to be examined.
+	 * 
+	 * @param curLine the current line that is being checked to determine the the found synchronized type
+	 * @param synchronizedPosition the last position of the found synchronized syntax
+	 * @return 0 = nothing found (try next line) | 1 = block synchronized found | 2 = method synchronized found
+	 */
+	private int determineSynchronizedType( String curLine, int synchronizedPosition ) {
+
+		int sychronizedType = 0;
+
+		// If there are characters on this line then iterate through it
+		if( !curLine.isEmpty() ) {
+
+			// Start a character iterator before the synchronized position
+			StringCharacterIterator charIter = new StringCharacterIterator( curLine, synchronizedPosition - 1 );
+			String nextChar = null;
+
+			// Keep looping till the end of the line is hit, or a break is encountered
+			while( charIter.next() != CharacterIterator.DONE ) {
+
+				nextChar = Character.toString( charIter.current() );
+
+				// If the next character is a '(', we have a block synchronized
+				if( nextChar.equals( "(" ) ) {
+					sychronizedType = 1;
+					break;
+				}
+				else if( nextChar.matches( "\\s" ) ) { // Whitespace is found
+					// Consume it
+				}
+				else { // Another character showed up, we have a method synchronized
+					sychronizedType = 2;
+					break;
+				}
+			}
+		}
+		return sychronizedType;
+	}
+
+	/**
+	 * All the synchronized constructs are handled here for the current line that is being examined.
+	 * The only exceptions are the synchronized block and method constructs since they have to be handled
+	 * in a different manner, and are handled elsewhere.
+	 * 
+	 * @param curLine the current line for which the constructs are checked on
+	 * @param lineNum the current line number
+	 */
+	private void handleFindingConstructs( String curLine, int lineNum ) {
+
+		// Synchronize
+		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCK );
+		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCKINTERRUPTIBLY );
+		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_TRYLOCK );
+		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_UNLOCK );
+		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_NEWCONDITION );
+
+		// Latch
+		parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_COUNTDOWN );
+		parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_AWAIT );
+
+		// Barrier
+		parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_RESET );
+		parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_AWAIT );
+
+		// Semaphore
+		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE );
+		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIREUNINTERRUPTIBLY );
+		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE );
+		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN );
+		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE );
 	}
 
 	/**
@@ -227,7 +320,7 @@ public class FileParser {
 	 * @param syntax the syntax of the synchronization construct
 	 * @param sequenceNum the sequence number
 	 */
-	private void parseLineForConstructs( String curLine, int lineNumber, String construct, String syntax, int sequenceNum ) {
+	private void parseLineForConstructs( String curLine, int lineNumber, String construct, String syntax ) {
 
 		int pos = 0; // The last character position
 		int currentPos = 0; // The current character position
@@ -240,12 +333,8 @@ public class FileParser {
 			if( ( currentPos = curLine.indexOf( syntax, pos ) ) != -1 ) {
 
 				// A construct is found, create an interest point
-				InterestPoint interestingPoint = new InterestPoint( lineNumber, sequenceNum, construct, syntax );
-
-				// Add to the _sequence, the point and the character position
+				InterestPoint interestingPoint = new InterestPoint( lineNumber, _sequence.size(), construct, syntax );
 				_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
-				sequenceNum++;
-
 				pos = currentPos + syntax.length();
 			}
 			else {
@@ -255,8 +344,49 @@ public class FileParser {
 	}
 
 	/**
-	 * This inner class is a data class used to hold additional metadata such as the character position that the
-	 * {@link InterestPoint} was found at in the source line.
+	 * The sequence of interest points discovered is usually out of order, and thus needs 
+	 * re-ordering. This method will correct the sequence's ordering while retaining all the
+	 * additional metadata as found in the {@link SequenceOrdering} class.
+	 * 
+	 * @return the ordered arraylist of the sequence ordering
+	 */
+	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
+
+		ArrayList<SequenceOrdering> sortedOrder = new ArrayList<SequenceOrdering>(); // The sorted order
+
+		// If more then one point then sort the points
+		if( _sequence.size() > 0 ) {
+
+			int lowestIndex = 0; // The lowest index of to be added (starts off higher then possible)
+			int index = 0; // The selected index to be added to the sortOrder next
+			int lowestChar = 0; // The lowest character position found
+
+			// Keep looping till all the interest points are accounted for
+			while( _sequence.size() > 0 ) {
+
+				lowestChar = _sequence.get( 0 ).getCharacterPosition();
+				for( SequenceOrdering singleSequence : _sequence ) {
+
+					if( singleSequence.getCharacterPosition() < lowestChar ) {
+						lowestIndex = index;
+					}
+					index++;
+				}
+
+				// Add the next lowest interest point in order of sequence
+				sortedOrder.add( _sequence.get( lowestIndex ) );
+				_sequence.remove( lowestIndex );
+			}
+		}
+		else { // If only one point found then add it
+			sortedOrder.add( _sequence.get( 0 ) );
+		}
+		return sortedOrder;
+	}
+
+	/**
+	 * This inner class is a data class used to hold additional metadata such as the character 
+	 * position that the {@link InterestPoint} was found at in the source line.
 	 * 
 	 * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
 	 */

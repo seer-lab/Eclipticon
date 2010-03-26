@@ -7,9 +7,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ca.uoit.eclipticon.Constants;
+import ca.uoit.eclipticon.data.AutomaticConfiguration;
+import ca.uoit.eclipticon.data.AutomaticConfigurationHandler;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
@@ -79,7 +83,7 @@ public class Instrumentor {
 	 * 
 	 * @param sourceFile the source file to be instrumented
 	 */
-	public void instrument( SourceFile sourceFile ) {
+	public void instrument( SourceFile sourceFile, boolean automaticMode ) {
 
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		BufferedReader bufReader = getBufferReader( sourceFile._path.toFile() ); // Get a buffer reader of this file
@@ -91,11 +95,19 @@ public class Instrumentor {
 		ArrayList<InterestPoint> interestingPoints = sourceFile.getInterestingPoints();
 		ArrayList<InstrumentationPoint> instrPoints = new ArrayList<InstrumentationPoint>();
 
-		// Go through all the interesting points and find the instrumentation points
-		for( InterestPoint point : interestingPoints ) {
-			// If this interesting point is an instrumentation point then store it
-			if( point instanceof InstrumentationPoint ) {
-				instrPoints.add( (InstrumentationPoint)point );
+		// If automatic mode is used get the instrumentation Points using automatic configuration (automatic overwrites
+		// manual)
+		if( automaticMode ) {
+			instrPoints = getAutomaticInstrumentationPoints( interestingPoints );
+		}
+		else { // Manual instrumentation is occurring
+
+			// Go through all the interesting points and find the instrumentation points
+			for( InterestPoint point : interestingPoints ) {
+				// If this interesting point is an instrumentation point then store it
+				if( point instanceof InstrumentationPoint ) {
+					instrPoints.add( (InstrumentationPoint)point );
+				}
 			}
 		}
 
@@ -154,6 +166,70 @@ public class Instrumentor {
 	}
 
 	/**
+	 * This method will use the automatic configurations to transform every interesting point
+	 * into an instrumentation point using the randomized values given in the configuration.
+	 * 
+	 * @param interestingPoints arraylist of interesting points for a sourcefile
+	 * @return arraylist of instrumentation points
+	 */
+	private ArrayList<InstrumentationPoint> getAutomaticInstrumentationPoints(
+			ArrayList<InterestPoint> interestingPoints ) {
+
+		AutomaticConfigurationHandler configurationHandler = new AutomaticConfigurationHandler();
+		AutomaticConfiguration configuration = configurationHandler.getConfiguration();
+
+		int lowDelayRange = configuration.getLowDelayRange();
+		int highDelayRange = configuration.getHighDelayRange();
+		int sleepProbability = configuration.getSleepProbability();
+		int yieldProbability = configuration.getYieldProbability();
+		int synchronizeProbability = configuration.getSynchronizeProbability();
+		int barrierProbability = configuration.getBarrierProbability();
+		int latchProbability = configuration.getLatchProbability();
+		int semaphoreProbability = configuration.getSemaphoreProbability();
+
+		ArrayList<InstrumentationPoint> instrPoints = new ArrayList<InstrumentationPoint>();
+
+		Random rand = new Random();
+
+		for( InterestPoint interestPoint : interestingPoints ) {
+
+			// Figure out the type of noise to use
+			int type = 0;
+			if( rand.nextInt( 100 ) <= sleepProbability ) {
+				type = Constants.SLEEP;
+			}
+			else {
+				type = Constants.YIELD;
+			}
+
+			// Figure out the probability of instrumenting given the type of the construct
+			int probability = 0;
+			String construct = interestPoint.getConstruct();
+
+			if( construct.equals( Constants.SYNCHRONIZE ) ) {
+				probability = synchronizeProbability;
+			}
+			else if( construct.equals( Constants.BARRIER ) ) {
+				probability = barrierProbability;
+			}
+			else if( construct.equals( Constants.LATCH ) ) {
+				probability = latchProbability;
+			}
+			else if( construct.equals( Constants.SEMAPHORE ) ) {
+				probability = semaphoreProbability;
+			}
+
+			// Add the newly made instrumentation point
+			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(),
+					interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange,
+					highDelayRange ) );
+
+		}
+
+		return instrPoints;
+	}
+
+	/**
 	 * Adds the random import statement and a global random variable to the class
 	 * which will be used by the instrumentation noise statements.
 	 * 
@@ -209,23 +285,29 @@ public class Instrumentor {
 	 */
 	private String evaluateLine( InstrumentationPoint point, String currentLine ) {
 
-		int injectionPosition = 0;
+		int injectionPosition = -1;
 
 		// Skip to the correct instrumentation point based on the sequence number and the construct's syntax
 		for( int i = 0; i <= point.getSequence(); i++ ) {
+
+			injectionPosition = currentLine.indexOf( point.getConstructSyntax(), injectionPosition + 1 );
+
 			if( i == point.getSequence() ) {
 
 				// Point is found, now to backtrack from this point till a valid statement delimiter is found
-				injectionPosition = currentLine.indexOf( point.getConstructSyntax() );
+				injectionPosition = currentLine.indexOf( point.getConstructSyntax(), injectionPosition );
 
 				// Loop backwards from injectionPosition till a valid delimiter is found
+				// TODO Not sure this works on a x.call that is split on two lines
+				// TODO Need to instrument afterwards as well (need to take into account scope) // Need to avoid comments and strings
+				// If in a synchronized block need to check for the correct closing } // Need to avoid comments and strings
 				for( int j = injectionPosition; j != 0; j-- ) {
 
 					// If the character matches a delimiter
 					if( Character.toString( currentLine.charAt( j ) ).matches( "[(\\s+)]|[;]|[}]|[{]|[\\)]" ) ) {
 
 						// Adjust to the new position
-						injectionPosition = j;
+						injectionPosition = j + 1;
 						break;
 					}
 				}
