@@ -11,9 +11,9 @@ import org.eclipse.core.runtime.Path;
  */
 public class SourceFile {
 
-	public Path		_path		= null; // The abstract path name of this source file
-	public int		_numLines	= 0;	// The number of lines this source file has
-	public String	_name		= null; // The name of this source file
+	private Path	_path		= null; // The abstract path name of this source file
+	private int		_numLines	= 0;	// The number of lines this source file has
+	private String	_name		= null; // The name of this source file
 
 	// A collection of interest points for this source file
 	public ArrayList<InterestPoint> _interestingPoints = new ArrayList<InterestPoint>();

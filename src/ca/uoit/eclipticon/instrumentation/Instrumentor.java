@@ -46,8 +46,31 @@ public class Instrumentor {
 		catch( FileNotFoundException e ) {
 			e.printStackTrace();
 		}
-
+		
+		makeBackupFile(sourceFile);
+		
 		return new BufferedReader( fileReader );
+	}
+
+	/**
+	 * Makes a backup of the source file with the file extension of .eclipticon
+	 * 
+	 * @param sourceFile file to backup
+	 */
+	private void makeBackupFile( File sourceFile ) {
+		
+		sourceFile.renameTo( new File(sourceFile.getPath() + ".eclipticon") );
+
+		// Write the fileContent to the new file
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter( sourceFile.getPath() );
+			fw.flush();
+			fw.close();
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -59,9 +82,9 @@ public class Instrumentor {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private void printFile( String instrumentedCode, String filePath ) {
-
+	
 		// Create the file name for the instrumented file
-		String fileName = ( filePath + ".instr" );
+		String fileName = ( filePath );
 
 		// Write the fileContent to the new file
 		FileWriter fw = null;
@@ -75,6 +98,36 @@ public class Instrumentor {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * This method will revert the source file after the instrumentation back 
+	 * to the original state before the instrumentation.
+	 * 
+	 * @param sourceFile The source file to be reverted
+	 */
+	public void revertToOriginalState(SourceFile sourceFile){
+		
+		// Get the original file path
+		File originalFile = new File (sourceFile.getPath().toString() + ".eclipticon");
+		
+		// Rename the originalFile.eclipticon to originalFile
+		originalFile.renameTo( sourceFile.getPath().toFile() );
+
+		// Write the originalFile
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter( originalFile.getPath() );
+			fw.flush();
+			fw.close();
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
+
+		// Remove the instrumented sourcefile
+		originalFile.delete();
+		
+	}
 
 	/**
 	 * This method will perform the instrumentation on a source file using all
@@ -86,7 +139,7 @@ public class Instrumentor {
 	public void instrument( SourceFile sourceFile, boolean automaticMode ) {
 
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
-		BufferedReader bufReader = getBufferReader( sourceFile._path.toFile() ); // Get a buffer reader of this file
+		BufferedReader bufReader = getBufferReader( sourceFile.getPath().toFile() ); // Get a buffer reader of this file
 
 		String currentLine = ""; // The current line's value
 		int lineNum = 1; // The current line number
