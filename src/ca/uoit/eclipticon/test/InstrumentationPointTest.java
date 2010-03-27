@@ -12,7 +12,8 @@ public class InstrumentationPointTest extends TestCase {
 	
 	int line = 20;
 	int instance = 0;
-	String construct = Constants.SEMAPHORESYNTAX;
+	String construct = Constants.SEMAPHORE;
+	String constructSyntax = Constants.SEMAPHORE_ACQUIRE;
 	int type = 0;
 	int prob = 80;
 	int low = 1;
@@ -20,7 +21,7 @@ public class InstrumentationPointTest extends TestCase {
 	
 	@Before public void setUp() {
 		
-		actual = new InstrumentationPoint(line, instance, construct, type, prob, low, high);
+		actual = new InstrumentationPoint(line, instance, construct, constructSyntax, type, prob, low, high);
 		//InstrumentationPoint( int line, int instance, String construct, int type, int prob, int low, int high )
 	}
 	
@@ -28,12 +29,16 @@ public class InstrumentationPointTest extends TestCase {
 		assertEquals(line, actual.getLine());
 	}
 	
-	@Test public void testGetInstance() {
-		assertEquals(instance, actual.getInstance());
+	@Test public void testGetSequence() {
+		assertEquals(instance, actual.getSequence());
 	}
 
 	@Test public void testGetConstruct() {
 		assertEquals(construct, actual.getConstruct());
+	}
+	
+	@Test public void testGetConstructSyntax() {
+		assertEquals(constructSyntax, actual.getConstructSyntax());
 	}
 	
 	@Test public void testGetType() {
