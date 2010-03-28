@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.sound.midi.Instrument;
+
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -45,35 +47,48 @@ import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
 import ca.uoit.eclipticon.instrumentation.FileParser;
 import ca.uoit.eclipticon.instrumentation.EditorHandler;
+import ca.uoit.eclipticon.instrumentation.Instrumentor;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
 
 	// The GUI components that need to be modified during run time
 
-	Composite	_compositeParent	= null;
-	Composite	_compositePoints	= null;
-	CTabFolder	_folderTab			= null;
+	Composite						_compositeParent	= null;
+	Composite						_compositePoints	= null;
+	CTabFolder						_folderTab			= null;
 
-	Text		_txtLower			= null;
-	Text		_txtHigher			= null;
-	Text		_txtProb			= null;
+	Text							_txtLower			= null;
+	Text							_txtHigher			= null;
+	Text							_txtProb			= null;
 
-	Combo		_cmbType			= null;
-	Scale		_sleepYield			= null;
-	Text		_txtAutoLower		= null;
-	Text		_txtAutoHigher		= null;
-	Scale		_scaleBarrier		= null;
-	Scale		_scaleSync			= null;
-	Scale		_scaleSemaphores	= null;
-	Scale		_scaleLatches		= null;
-	Boolean		_test				= false;
-	Tree		_tree				= null;
-	Boolean		_modified			= false;
-	AutomaticConfigurationHandler _ach = null;
+	Button							_manualButton		= null;
+	Button							_autoButton			= null;
+
+	Combo							_cmbType			= null;
+	Scale							_sleepYield			= null;
+	Text							_txtAutoLower		= null;
+	Text							_txtAutoHigher		= null;
+	Scale							_scaleBarrier		= null;
+	Scale							_scaleSync			= null;
+	Scale							_scaleSemaphores	= null;
+	Scale							_scaleLatches		= null;
+	Boolean							_test				= false;
+	Tree							_tree				= null;
+	Tree							_tree2				= null;
+	Boolean							_modified			= false;
+	AutomaticConfigurationHandler	_ach				= null;
+	FileParser						_newFP				= null;
+	Path							_workspacePath		= null;
 
 	public EclipticonViewer( Composite parent, int i ) {
 		// TODO Auto-generated constructor stub
 		super();
+		_newFP = new FileParser();
+		ResourcesPlugin.getWorkspace();
+		IWorkspace workspace = ResourcesPlugin.getWorkspace();
+		IWorkspaceRoot root = workspace.getRoot();
+
+		_workspacePath = (Path)root.getLocation();
 	}
 
 	protected Control createControl( Composite compositeParent ) {
@@ -92,15 +107,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		disableInfoLabels();
 		fillTree();
 		// Initialize the models
-		
-		
-		_ach = new AutomaticConfigurationHandler();
 
+		_ach = new AutomaticConfigurationHandler();
 
 		try {
 			// Read in their XML's
 			//_ach.readXml();
-			
+
 			_ach.readXml();
 			// Populate the table and the Auto Tab
 			populateAutoTab( _ach.getConfiguration() );
@@ -116,7 +129,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 
 		// Select the Manual Tab
 		_folderTab.setSelection( 0 );
@@ -171,9 +183,11 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 		TreeColumn col2 = new TreeColumn( _tree, SWT.LEFT );
 		col2.setText( "Type" );
+		col2.setWidth( 100 );
 
 		TreeColumn col3 = new TreeColumn( _tree, SWT.LEFT );
 		col3.setText( "Delay" );
+		col3.setWidth( 60 );
 		_tree.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 
 		_tree.setLinesVisible( true );
@@ -184,25 +198,17 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			@Override
 			public void treeCollapsed( TreeEvent e ) {
 				// TODO Auto-generated method stub
-				Tree parent = ( (TreeItem)e.item ).getParent();
-				for( int i = 0; i < parent.getColumnCount(); i++ ) {
-					parent.getColumn( i ).pack();
-				}
+				_tree.getColumn( 0 ).pack();
 			}
 
 			@Override
 			public void treeExpanded( TreeEvent e ) {
 				// TODO Auto-generated method stub
-				Tree parent = ( (TreeItem)e.item ).getParent();
-				for( int i = 0; i < parent.getColumnCount(); i++ ) {
-					parent.getColumn( i ).pack();
-				}
+				_tree.getColumn( 0 ).pack();
 			}
 
 		} );
-		for( int i = 0; i < _tree.getColumnCount(); i++ ) {
-			_tree.getColumn( i ).pack();
-		}
+		_tree.getColumn( 0 ).pack();
 
 		// Create a Section for the properties
 		Group groupProperties = new Group( composite, SWT.NULL );
@@ -258,13 +264,17 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtProb.setLayoutData( gridData );
 
 		// Default Button
-		Button but = new Button( groupProperties, SWT.NULL );
+		_manualButton = new Button( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
 		gridData.horizontalSpan = 3;
-		but.setLayoutData( gridData );
-		but.setText( "Default" );
 
-		but.addSelectionListener( this );
+		_manualButton.setLayoutData( gridData );
+		if( _newFP.checkIfBackupExists( _workspacePath ) )
+			_manualButton.setText( "Revert Files" );
+		else
+			_manualButton.setText( "Instrument Files" );
+
+		_manualButton.addSelectionListener( this );
 
 		tabManual.setControl( composite );
 
@@ -356,7 +366,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 		// Create a group for the mechanisms
 		Group groupMech = new Group( groupSettings, SWT.NULL );
-		gridData = new GridData( GridData.FILL_BOTH );
+		gridData = new GridData( GridData.FILL_HORIZONTAL );
 		gridData.minimumHeight = 280;
 		gridData.horizontalSpan = 3;
 		groupMech.setLayoutData( gridData );
@@ -455,13 +465,45 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		hundredLbl4.setLayoutData( gridData );
 		hundredLbl4.setText( "100" );
 
+		_tree2 = new Tree( groupSettings, SWT.MULTI | SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER );
+		gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
+		gridData.horizontalSpan = 3;
+		_tree2.setLayoutData( gridData );
+
+		TreeColumn col1 = new TreeColumn( _tree2, SWT.LEFT );
+
+		col1.setText( "Files to be Instrumented" );
+
+		_tree2.setLinesVisible( true );
+		_tree2.setHeaderVisible( true );
+		_tree2.addSelectionListener( this );
+		_tree2.addTreeListener( new TreeListener() {
+
+			@Override
+			public void treeCollapsed( TreeEvent e ) {
+
+			}
+
+			@Override
+			public void treeExpanded( TreeEvent e ) {
+				// TODO Auto-generated method stub
+				_tree2.getColumn( 0 ).pack();
+
+			}
+
+		} );
+		_tree2.getColumn( 0 ).pack();
+
 		// Default Button
-		Button but = new Button( groupSettings, SWT.NULL );
+		_autoButton = new Button( groupSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
 		gridData.horizontalSpan = 3;
-		but.setLayoutData( gridData );
-		but.setText( "Default" );
-
+		_autoButton.setLayoutData( gridData );
+		if( _newFP.checkIfBackupExists( _workspacePath ) )
+			_autoButton.setText( "Revert Files" );
+		else
+			_autoButton.setText( "Instrument Files" );
+		_autoButton.addSelectionListener( this );
 		tabAuto.setControl( composite );
 
 	}
@@ -479,6 +521,16 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_scaleLatches.setSelection( autoConfig.getLatchProbability() );
 		_scaleSemaphores.setSelection( autoConfig.getSemaphoreProbability() );
 		_scaleSync.setSelection( autoConfig.getSynchronizeProbability() );
+		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
+
+		for( SourceFile sf : sources ) {
+			TreeItem item = new TreeItem( _tree2, SWT.NONE );
+			item.setText( sf.getName() );
+			item.setData( sf );
+			item.setChecked( true );
+		}
+		_tree2.getColumn( 0 ).pack();
+
 	}
 
 	/**
@@ -487,18 +539,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * @param instrPoints
 	 */
 	public void fillTree() {
-		FileParser newFP = new FileParser();
-		ResourcesPlugin.getWorkspace();
-		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		IWorkspaceRoot root = workspace.getRoot();
 
-		Path tmpPath = (Path)root.getLocation();
-		ArrayList<SourceFile> sources = newFP.getFiles( tmpPath );
+		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
 
 		for( SourceFile sf : sources ) {
-			newFP.findInterestPoints( sf );
+			_newFP.findInterestPoints( sf );
 			boolean someChecked = false;
-			if( sf.getInterestingPoints().size() > 0 || _test) {
+			if( sf.getInterestingPoints().size() > 0 || _test ) {
 				TreeItem item = new TreeItem( _tree, SWT.NONE );
 				item.setText( sf.getName() );
 				item.setData( sf );
@@ -525,7 +572,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				}
 
 			}
-			
+
 		}
 
 	}
@@ -563,13 +610,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtProb.setEnabled( false );
 	}
 
-	/**
-	 * Refreshes the table item to reflect the model
-	 * 
-	 */
-	public void refreshSelectedTableItem() {
 
-	}
 
 	/**
 	 * Clears the table and repopulates from the model
@@ -612,19 +653,21 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public void widgetDefaultSelected( SelectionEvent arg0 ) {
-		// TODO
+		// Double Clicked
+		// The selection was a file in the tree
 		if( arg0.item instanceof TreeItem ) {
 			TreeItem selectedItem = (TreeItem)arg0.item;
 			Object data = selectedItem.getData();
-			if (data instanceof SourceFile){
+			// Open it in the editor
+			if( data instanceof SourceFile ) {
 				EditorHandler eH = new EditorHandler();
-				SourceFile sFSelected = (SourceFile) data;
-				eH.openFile( sFSelected.getPath());
+				SourceFile sFSelected = (SourceFile)data;
+				eH.openFile( sFSelected.getPath() );
 			}
-			else if (data instanceof InterestPoint){
-				InterestPoint iPSelected = (InterestPoint) data;
+			else if( data instanceof InterestPoint ) {
+				InterestPoint iPSelected = (InterestPoint)data;
 			}
-				
+
 		}
 	}
 
@@ -709,10 +752,12 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				}
 			}
 			else {
+				// Selected item is a root file, disable fields not needed
 				if( selectedItem.getParentItem() == null ) {
 					disableInfoLabels();
 				}
 				else {
+					// Only enable fields when the selection is an Instrumentation Point
 					if( selectedItem.getData() instanceof InstrumentationPoint ) {
 						fillInfoLabels( (InstrumentationPoint)selectedItem.getData() );
 					}
@@ -724,7 +769,63 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		}
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
-			fillTree();
+			Instrumentor i = new Instrumentor();
+			ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
+			
+			// Revert Files instead of instrumenting them
+			if( _newFP.checkIfBackupExists( _workspacePath ) ) {
+				for( SourceFile sf : sources ) {
+					try {
+						i.revertToOriginalState( sf );
+					}
+					catch( IOException e ) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+			// Instrument the files
+			else {
+				
+				// Manual Instrumentation
+				if( arg0.widget == _manualButton ) {
+					for( SourceFile sf : sources ) {
+						_newFP.findInterestPoints( sf );
+						i.instrument( sf, false );
+					}
+				}
+				
+				// Automatic Instrumentation
+				else if( arg0.widget == _autoButton ) {
+					{
+						// There are Tree Items (Files)
+						if( _tree2.getItemCount() > 0 ) {
+							TreeItem[] items = _tree2.getItems();
+							//Go through each tree item
+							for( TreeItem tI : items){
+								//See if it's checked
+								if (tI.getChecked()){
+									// If it's a source file
+									if (tI.getData() instanceof SourceFile){
+										SourceFile sf = (SourceFile) tI.getData();
+										_newFP.findInterestPoints( sf );
+										
+										// Only instrument it if it has points worth looking at.
+										if( sf.getInterestingPoints().size() > 0 )
+											i.instrument( sf, true );
+									}
+									
+								}
+							}
+						}
+					}
+				}
+
+			}
+			
+			//Make sure the buttons are correctly labeled.
+			checkButtons();
+
 		}
 
 		// The Widget selected was a Combo box
@@ -738,7 +839,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Barrier Scale
 		else if( arg0.widget == _scaleBarrier ) {
 			// If it was moved set the flag
@@ -747,7 +848,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Latch Scale
 		else if( arg0.widget == _scaleLatches ) {
 			// If it was moved set the flag
@@ -756,7 +857,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Semaphore Scale
 		else if( arg0.widget == _scaleSemaphores ) {
 			// If it was moved set the flag
@@ -765,7 +866,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_modified = true;
 			}
 		}
-		
+
 		// If the Widget Selected is a Synchronization Scale
 		else if( arg0.widget == _scaleSync ) {
 			// If it was moved set the flag
@@ -774,7 +875,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_modified = true;
 			}
 		}
-		
+
 		// If the flag has been raised update the Auto Config Scale
 		if( _modified ) {
 			try {
@@ -786,7 +887,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			}
 			_modified = false;
 		}
-
 
 	}
 
@@ -807,7 +907,49 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public void focusLost( FocusEvent e ) {
+		
+		// Flag Variable
+		int temp = 0;
+		
+		// Upon the widget loosing focus it checks to see if anything has been modified
+		if( _modified ) {
 
+			// Update the respective configuration
+			try {
+				_ach.getConfiguration().setLowDelayRange( Integer.parseInt( _txtAutoLower.getText()));
+				_ach.getConfiguration().setHighDelayRange( Integer.parseInt( _txtAutoHigher.getText()));
+				_ach.writeXml();
+			}
+			catch( IOException e1 ) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+			_modified = false;
+
+		}
+
+	}
+
+	/**
+	 * Check the buttons in the Auto and Manual to see if they have the correct text to represent reverting
+	 * files or not.
+	 */
+	public void checkButtons() {
+		// There's backup files, so set appropriate text for the buttons
+		if( _newFP.checkIfBackupExists( _workspacePath ) ) {
+			_autoButton.setText( "Revert Files" );
+			_manualButton.setText( "Revert Files" );
+
+		}
+		else {
+			_autoButton.setText( "Instrument Files" );
+			_manualButton.setText( "Instrument Files" );
+		}
+		_autoButton.pack();
+		_autoButton.redraw();
+		_autoButton.pack();
+		_autoButton.redraw();
 	}
 
 }

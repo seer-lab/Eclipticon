@@ -117,7 +117,6 @@ public class AutomaticConfigurationHandler {
 			int i = _input.indexOf( ",", _position );
 			val = _input.substring( _position, i );
 			_position = i + 1;
-			System.out.println( val );
 		}
 
 		return val;

@@ -2,10 +2,13 @@ package ca.uoit.eclipticon.instrumentation;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -46,9 +49,7 @@ public class Instrumentor {
 		catch( FileNotFoundException e ) {
 			e.printStackTrace();
 		}
-		
-		makeBackupFile(sourceFile);
-		
+
 		return new BufferedReader( fileReader );
 	}
 
@@ -56,21 +57,36 @@ public class Instrumentor {
 	 * Makes a backup of the source file with the file extension of .eclipticon
 	 * 
 	 * @param sourceFile file to backup
+	 * @throws IOException 
 	 */
-	private void makeBackupFile( File sourceFile ) {
-		
-		sourceFile.renameTo( new File(sourceFile.getPath() + ".eclipticon") );
+	private void makeBackupFile( File sourceFile ) throws IOException {
 
-		// Write the fileContent to the new file
-		FileWriter fw = null;
+		File copyFile = new File( sourceFile.getPath() + ".eclipticon" );
+		
+		//Create the file if it doesn't exist
+		if( !copyFile.exists() ) {
+			copyFile.createNewFile();
+		}
+
+		FileChannel source = null;
+		FileChannel destination = null;
+		
+		//Copy the original to the copy
 		try {
-			fw = new FileWriter( sourceFile.getPath() );
-			fw.flush();
-			fw.close();
+			source = new FileInputStream( sourceFile ).getChannel();
+			destination = new FileOutputStream( copyFile ).getChannel();
+			destination.transferFrom( source, 0, source.size() );
 		}
-		catch( IOException e ) {
-			e.printStackTrace();
+		//Then close the stream
+		finally {
+			if( source != null ) {
+				source.close();
+			}
+			if( destination != null ) {
+				destination.close();
+			}
 		}
+
 	}
 
 	/**
@@ -82,7 +98,7 @@ public class Instrumentor {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	private void printFile( String instrumentedCode, String filePath ) {
-	
+
 		// Create the file name for the instrumented file
 		String fileName = ( filePath );
 
@@ -98,35 +114,46 @@ public class Instrumentor {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * This method will revert the source file after the instrumentation back 
 	 * to the original state before the instrumentation.
 	 * 
 	 * @param sourceFile The source file to be reverted
+	 * @throws IOException 
 	 */
-	public void revertToOriginalState(SourceFile sourceFile){
+	public void revertToOriginalState( SourceFile sourceFile ) throws IOException {
+		//This is the path to the backup file and original file
+		File backupFile = new File( sourceFile.getPath() + ".eclipticon" );
+		File originalFile = sourceFile.getPath().toFile();
 		
-		// Get the original file path
-		File originalFile = new File (sourceFile.getPath().toString() + ".eclipticon");
-		
-		// Rename the originalFile.eclipticon to originalFile
-		originalFile.renameTo( sourceFile.getPath().toFile() );
-
-		// Write the originalFile
-		FileWriter fw = null;
-		try {
-			fw = new FileWriter( originalFile.getPath() );
-			fw.flush();
-			fw.close();
+		//Only revert if the backup file exists
+		if( backupFile.exists() ) {
+			// Clear the instrumented file
+			originalFile.delete();
+			originalFile.createNewFile();
+			FileChannel source = null;
+			FileChannel destination = null;
+			
+			// Put back the original file
+			try {
+				source = new FileInputStream( backupFile ).getChannel();
+				destination = new FileOutputStream( sourceFile.getPath().toString() ).getChannel();
+				destination.transferFrom( source, 0, source.size() );
+			}
+			//Then close the stream
+			finally {
+				if( source != null ) {
+					source.close();
+				}
+				if( destination != null ) {
+					destination.close();
+				}
+				backupFile.delete();
+			}
+			
 		}
-		catch( IOException e ) {
-			e.printStackTrace();
-		}
 
-		// Remove the instrumented sourcefile
-		originalFile.delete();
-		
 	}
 
 	/**
@@ -141,6 +168,13 @@ public class Instrumentor {
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		BufferedReader bufReader = getBufferReader( sourceFile.getPath().toFile() ); // Get a buffer reader of this file
 
+		try {
+			makeBackupFile( sourceFile.getPath().toFile() );
+		}
+		catch( IOException e1 ) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		String currentLine = ""; // The current line's value
 		int lineNum = 1; // The current line number
 
@@ -166,6 +200,7 @@ public class Instrumentor {
 
 		// If bufferReader is ready start parsing the sourceFile
 		try {
+
 			if( bufReader.ready() ) {
 				String buffer = "";
 
@@ -225,10 +260,16 @@ public class Instrumentor {
 	 * @param interestingPoints arraylist of interesting points for a sourcefile
 	 * @return arraylist of instrumentation points
 	 */
-	private ArrayList<InstrumentationPoint> getAutomaticInstrumentationPoints(
-			ArrayList<InterestPoint> interestingPoints ) {
+	private ArrayList<InstrumentationPoint> getAutomaticInstrumentationPoints( ArrayList<InterestPoint> interestingPoints ) {
 
 		AutomaticConfigurationHandler configurationHandler = new AutomaticConfigurationHandler();
+		try {
+			configurationHandler.readXml();
+		}
+		catch( FileNotFoundException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		AutomaticConfiguration configuration = configurationHandler.getConfiguration();
 
 		int lowDelayRange = configuration.getLowDelayRange();
@@ -273,9 +314,7 @@ public class Instrumentor {
 			}
 
 			// Add the newly made instrumentation point
-			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(),
-					interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange,
-					highDelayRange ) );
+			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(), interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange, highDelayRange ) );
 
 		}
 
@@ -295,8 +334,7 @@ public class Instrumentor {
 		String importRegex = "(import)(\\s+)((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))([\\.]*)([\\*]*)([\\s]*)(;)";
 		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class)[(\\s)+]([a-z][a-z0-9_])*[(\\s)+](.*?)(\\{)";
 		Pattern importPattern = Pattern.compile( importRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-				| Pattern.MULTILINE );
+		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL | Pattern.MULTILINE );
 		Matcher matcher = null;
 		String finalInstrumentedCode = "";
 
@@ -308,8 +346,7 @@ public class Instrumentor {
 		int importEndPos = matcher.end();
 
 		// Append from the start till the end of the matched import and add the import statement
-		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos )
-				+ _noiseMaker.makeRandImport() );
+		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos ) + _noiseMaker.makeRandImport() );
 
 		// Match on the class statement
 		matcher = classPattern.matcher( instrumentedCode );
@@ -319,8 +356,7 @@ public class Instrumentor {
 		int classEndPos = matcher.end();
 
 		// Append from the ending of the import match till the end of the class match, and add the random variable
-		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( importEndPos, classEndPos )
-				+ _noiseMaker.makeRandVariable() );
+		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( importEndPos, classEndPos ) + _noiseMaker.makeRandVariable() );
 
 		// Fill in the rest of the instrumented code
 		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( classEndPos ) );

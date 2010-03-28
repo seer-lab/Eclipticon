@@ -425,4 +425,39 @@ public class FileParser {
 			return _characterPosition;
 		}
 	}
+	public Boolean checkIfBackupExists( Path root ) {
+		// Make a file out of the path
+		File file = root.toFile();
+
+		// If the path is a directory
+		if( file.isDirectory() ) {
+
+			// Get all Files and Folders in it
+			File[] allFiles = file.listFiles();
+
+			// Go through each File/Folder
+			for( File fileTemp : allFiles ) {
+
+				Path currentPath = new Path( fileTemp.getPath() );
+				
+				// If it is a file
+				if( fileTemp.isFile() ) {
+
+					// and the file is a source file
+					if( fileTemp.toString().endsWith( ".eclipticon" ) ) {
+						return true;
+						
+					}
+				}
+				// If it is a folder then recursively call getFiles and add their returns to the current arraylist
+				else if( fileTemp.isDirectory() ) {
+					if( checkIfBackupExists( currentPath ) ) {
+						return true;
+					}
+				}
+				
+			}
+		}
+		return false;
+	}
 }
