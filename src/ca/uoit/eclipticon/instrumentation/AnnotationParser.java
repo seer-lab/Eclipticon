@@ -87,7 +87,7 @@ public class AnnotationParser {
 		}
 	}
 
-	public boolean checkAnnotationExists (String input) { // TODO change back to private
+	private boolean checkAnnotationExists (String input) {
 		
 		String regularExpression = "\\/\\*" + "[\\s+]?" + "@PreemptionPoint" + ".*?" + "\\*\\/";
 		Pattern pattern = Pattern.compile(regularExpression, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -223,59 +223,48 @@ public class AnnotationParser {
 	 * @return
 	 */
 	public String updateAnnotationComment(InstrumentationPoint point, String previousLine) { // previous line contains the comment, that I have to update.
-		// have sequence number, look for it in previous line.
-		
-		// TODO finish this method, half done.
-		
+
 		String beginningOfLine = "";
 		String restOfLine = "";
 		
 		boolean foundCorrectSequence = false;
-		
 		while (foundCorrectSequence == false) {
-		
-		//check that annotation exists
-		if (checkAnnotationExists(previousLine)) { // if true
-		
-			String params = parseParameterString(previousLine); // get the parameters out of the annotation
 			
-			// TODO may need an: if(params != null) {      I'm not sure if parseSequence will crash here
-			
-			_sequence = parseSequence(previousLine); System.out.println("sequence is: "+ _sequence + "      " + previousLine);
-			
-			// if sequence number is correct
-			if (_sequence == point.getSequence()) {
+			//check that annotation exists
+			if (checkAnnotationExists(previousLine)) { // if true
 				
-				// then exit loop, and continue on
-				foundCorrectSequence = true;
+				_sequence = parseSequence(previousLine);
+				System.out.println("sequence is: "+ _sequence);
 				
+				if (_sequence == point.getSequence()) { // if sequence number is correct, then exit loop, and continue on
+					foundCorrectSequence = true;
+				}
+				else if(_sequence > point.getSequence()) { // then the correct annotation comment is missing and we need to insert it here.
+					restOfLine = previousLine;
+					return beginningOfLine + " " + createAnnotationComment(point) + " " + restOfLine;
+				}
+				else { // sequence is NOT correct, go onto next comment in line and loop again.
+					
+					// store the start of the line, because we haven't found the right comment, and are going to get ride of the first part of the line
+					beginningOfLine = beginningOfLine + previousLine.substring(0, previousLine.indexOf("*/") + 2);					
+					previousLine = previousLine.substring(previousLine.indexOf("*/") + 2); // then delete the first annotation
+					
+					if(previousLine == null) { // there are no comment matches left, we need to create a new comment, the method was erroneously called
+						return beginningOfLine + " " + createAnnotationComment(point);
+					}
+				}
 			}
-			else { // sequence is NOT correct, go onto next comment in line and loop again.
-				
-				// store the start of the line, because we haven't found the right comment, and are going to get ride of the first part of the line
-				beginningOfLine = beginningOfLine + previousLine.substring(0, previousLine.indexOf("*/") + 2);
-				System.out.println("new line : " + beginningOfLine);
-				
-				previousLine = previousLine.substring(previousLine.indexOf("*/") + 2); // then delete the first annotation
-				
-				// TODO if previousLine is == null, then no comment matches, and we need to create a new comment, the method was erroneously called
-			}
-			System.out.println(" made this far.");
+			else {// there are no comment matches left, we need to create a new comment, the method was erroneously called
+				beginningOfLine = previousLine;
+				return beginningOfLine + " " + createAnnotationComment(point);
 			}
 		}
-		
 		// found the correct annotation comment, now update it.
 		
-		System.out.println("preiouvs line : " + previousLine);
 		restOfLine = previousLine.substring(previousLine.indexOf("*/") + 2); // get the rest of the line
-		System.out.println("rest of line : " + restOfLine);
-		
-		
 		
 		String updatedAnnotationComment;
-		
-		updatedAnnotationComment = "/* @PreemptionPoint ("; // TODO should really have this as an ivar string link Constants.SYNTAX
-		
+		updatedAnnotationComment = "/* @PreemptionPoint ("; // TODO should really have this as an ivar string like Constants.SYNTAX
 		updatedAnnotationComment = updatedAnnotationComment + "sequence = " + point.getSequence() + ", ";
 		
 		if(point.getType() == 0) { // then write sleep
@@ -288,13 +277,10 @@ public class AnnotationParser {
 			
 			updatedAnnotationComment = updatedAnnotationComment + "type = \"yield\", "
 				+ "probability = " + point.getProbability() + ") */";
-			
 		}
 		
-		String newLine = beginningOfLine + updatedAnnotationComment + restOfLine;
-		
+		String newLine = beginningOfLine + " " + updatedAnnotationComment + " " + restOfLine;
 		return newLine;		
-		
 	}
 	
 	
