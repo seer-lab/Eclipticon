@@ -87,7 +87,7 @@ public class AnnotationParser {
 		}
 	}
 
-	private boolean checkAnnotationExists (String input) {
+	public boolean checkAnnotationExists (String input) { // TODO change back to private
 		
 		String regularExpression = "\\/\\*" + "[\\s+]?" + "@PreemptionPoint" + ".*?" + "\\*\\/";
 		Pattern pattern = Pattern.compile(regularExpression, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
@@ -230,65 +230,76 @@ public class AnnotationParser {
 		String beginningOfLine = "";
 		String restOfLine = "";
 		
+		boolean foundCorrectSequence = false;
+		
+		while (foundCorrectSequence == false) {
+		
 		//check that annotation exists
 		if (checkAnnotationExists(previousLine)) { // if true
 		
 			String params = parseParameterString(previousLine); // get the parameters out of the annotation
 			
-			if(params != null) {
+			// TODO may need an: if(params != null) {      I'm not sure if parseSequence will crash here
+			
+			_sequence = parseSequence(previousLine); System.out.println("sequence is: "+ _sequence + "      " + previousLine);
+			
+			// if sequence number is correct
+			if (_sequence == point.getSequence()) {
 				
-				_sequence = parseSequence(previousLine);
-				// if sequence number is not correct, loop through until correct annotation is found
-				while (_sequence != point.getSequence()) {
-					
-					beginningOfLine = beginningOfLine + previousLine.substring(0, previousLine.indexOf("*/") + 2);
-					System.out.println("new line : " + beginningOfLine);
-					
-					previousLine = previousLine.substring(previousLine.indexOf("*/") + 2); // then delete the first annotation
-					
-					// now check if annotation exists again
-					if(checkAnnotationExists(previousLine) == false)
-						return "/*ECLIPTICON-ERROR-1*/";
-					else {
-						System.out.println("preiouvs line : " + previousLine);
-						_sequence = parseSequence(previousLine);
-						restOfLine = previousLine.substring(previousLine.indexOf("*/") + 2); // get the rest of the line
-						System.out.println("rest of line : " + restOfLine);
-						
-						
-						
-						String updatedAnnotationComment;
-						
-						updatedAnnotationComment = "/* @PreemptionPoint ("; // TODO should really have this as an ivar string link Constants.SYNTAX
-						
-						updatedAnnotationComment = updatedAnnotationComment + "sequence = " + point.getSequence() + ", ";
-						
-						if(point.getType() == 0) { // then write sleep
-							
-							updatedAnnotationComment = updatedAnnotationComment + "type = \"sleep\", "
-								+ "low = " + point.getLow() + ", high = " + point.getHigh() + ", "
-								+ "probability = " + point.getProbability() + ") */";
-						}
-						else {// then write yield
-							
-							updatedAnnotationComment = updatedAnnotationComment + "type = \"yield\", "
-								+ "probability = " + point.getProbability() + ") */";
-							
-						}
-						
-						String newLine = beginningOfLine + updatedAnnotationComment + restOfLine;
-						
-						return newLine;
-						
-						
-						
-					}
-					
-				}
+				// then exit loop, and continue on
+				foundCorrectSequence = true;
+				
+			}
+			else { // sequence is NOT correct, go onto next comment in line and loop again.
+				
+				// store the start of the line, because we haven't found the right comment, and are going to get ride of the first part of the line
+				beginningOfLine = beginningOfLine + previousLine.substring(0, previousLine.indexOf("*/") + 2);
+				System.out.println("new line : " + beginningOfLine);
+				
+				previousLine = previousLine.substring(previousLine.indexOf("*/") + 2); // then delete the first annotation
+				
+				// TODO if previousLine is == null, then no comment matches, and we need to create a new comment, the method was erroneously called
+			}
+			System.out.println(" made this far.");
 			}
 		}
-		return "/*ECLIPTICON-ERROR-2*/"; // TODO not sure but I think I need to create the I.P. normally if no annotation comment exists
 		
+		// found the correct annotation comment, now update it.
+		
+		System.out.println("preiouvs line : " + previousLine);
+		restOfLine = previousLine.substring(previousLine.indexOf("*/") + 2); // get the rest of the line
+		System.out.println("rest of line : " + restOfLine);
+		
+		
+		
+		String updatedAnnotationComment;
+		
+		updatedAnnotationComment = "/* @PreemptionPoint ("; // TODO should really have this as an ivar string link Constants.SYNTAX
+		
+		updatedAnnotationComment = updatedAnnotationComment + "sequence = " + point.getSequence() + ", ";
+		
+		if(point.getType() == 0) { // then write sleep
+			
+			updatedAnnotationComment = updatedAnnotationComment + "type = \"sleep\", "
+				+ "low = " + point.getLow() + ", high = " + point.getHigh() + ", "
+				+ "probability = " + point.getProbability() + ") */";
+		}
+		else {// then write yield
+			
+			updatedAnnotationComment = updatedAnnotationComment + "type = \"yield\", "
+				+ "probability = " + point.getProbability() + ") */";
+			
+		}
+		
+		String newLine = beginningOfLine + updatedAnnotationComment + restOfLine;
+		
+		return newLine;		
 		
 	}
+	
+	
+	
+	
+	
+	
 }
