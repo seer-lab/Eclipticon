@@ -33,51 +33,30 @@ public class Instrumentor {
 	private NoiseMaker	_noiseMaker	= new NoiseMaker(); // The object to generate noise
 
 	/**
-	 * This method will take a source file and will produce a buffer reader
-	 * from it that allows for line-by-line parsing of the file's contents.
-	 * 
-	 * @param sourceFile the source file to be used for the buffer reader
-	 * @return the buffer reader of the file that was used
-	 */
-	private BufferedReader getBufferReader( File sourceFile ) {
-
-		// Read the sourceFile and create the reading and file content objects
-		FileReader fileReader = null;
-		try {
-			fileReader = new FileReader( sourceFile );
-		}
-		catch( FileNotFoundException e ) {
-			e.printStackTrace();
-		}
-
-		return new BufferedReader( fileReader );
-	}
-
-	/**
 	 * Makes a backup of the source file with the file extension of .eclipticon
 	 * 
 	 * @param sourceFile file to backup
-	 * @throws IOException 
+	 * @throws IOException Signals that an I/O exception has occurred. 
 	 */
 	private void makeBackupFile( File sourceFile ) throws IOException {
 
 		File copyFile = new File( sourceFile.getPath() + ".eclipticon" );
-		
-		//Create the file if it doesn't exist
+
+		// Create the file if it doesn't exist
 		if( !copyFile.exists() ) {
 			copyFile.createNewFile();
 		}
 
 		FileChannel source = null;
 		FileChannel destination = null;
-		
-		//Copy the original to the copy
+
+		// Copy the original to the copy
 		try {
 			source = new FileInputStream( sourceFile ).getChannel();
 			destination = new FileOutputStream( copyFile ).getChannel();
 			destination.transferFrom( source, 0, source.size() );
 		}
-		//Then close the stream
+		// Then close the stream
 		finally {
 			if( source != null ) {
 				source.close();
@@ -86,7 +65,6 @@ public class Instrumentor {
 				destination.close();
 			}
 		}
-
 	}
 
 	/**
@@ -97,7 +75,7 @@ public class Instrumentor {
 	 * @param filePath the file's path
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private void printFile( String instrumentedCode, String filePath ) {
+	private void printFile( String instrumentedCode, String filePath ) throws IOException {
 
 		// Create the file name for the instrumented file
 		String fileName = ( filePath );
@@ -107,11 +85,12 @@ public class Instrumentor {
 		try {
 			fw = new FileWriter( fileName );
 			fw.write( instrumentedCode );
-			fw.flush();
-			fw.close();
 		}
-		catch( IOException e ) {
-			e.printStackTrace();
+		finally { // Close the writer
+			if( fw != null ) {
+				fw.flush();
+				fw.close();
+			}
 		}
 	}
 
@@ -120,29 +99,29 @@ public class Instrumentor {
 	 * to the original state before the instrumentation.
 	 * 
 	 * @param sourceFile The source file to be reverted
-	 * @throws IOException 
+	 * @throws IOException Signals that an I/O exception has occurred. 
 	 */
 	public void revertToOriginalState( SourceFile sourceFile ) throws IOException {
-		//This is the path to the backup file and original file
+
+		// This is the path to the backup file and original file
 		File backupFile = new File( sourceFile.getPath() + ".eclipticon" );
 		File originalFile = sourceFile.getPath().toFile();
-		
-		//Only revert if the backup file exists
+
+		// Only revert if the backup file exists
 		if( backupFile.exists() ) {
 			// Clear the instrumented file
 			originalFile.delete();
 			originalFile.createNewFile();
 			FileChannel source = null;
 			FileChannel destination = null;
-			
+
 			// Put back the original file
 			try {
 				source = new FileInputStream( backupFile ).getChannel();
 				destination = new FileOutputStream( sourceFile.getPath().toString() ).getChannel();
 				destination.transferFrom( source, 0, source.size() );
 			}
-			//Then close the stream
-			finally {
+			finally { // Then close the stream
 				if( source != null ) {
 					source.close();
 				}
@@ -151,9 +130,7 @@ public class Instrumentor {
 				}
 				backupFile.delete();
 			}
-			
 		}
-
 	}
 
 	/**
@@ -165,16 +142,24 @@ public class Instrumentor {
 	 */
 	public void instrument( SourceFile sourceFile, boolean automaticMode ) {
 
-		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
-		BufferedReader bufReader = getBufferReader( sourceFile.getPath().toFile() ); // Get a buffer reader of this file
+		// Get a buffer reader of this file
+		BufferedReader bufReader = null;
+		try {
+			bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		}
+		catch( FileNotFoundException e ) {
+			e.printStackTrace();
+		}
 
+		// Make backup of original source file
 		try {
 			makeBackupFile( sourceFile.getPath().toFile() );
 		}
-		catch( IOException e1 ) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		catch( IOException e ) {
+			e.printStackTrace();
 		}
+
+		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		String currentLine = ""; // The current line's value
 		int lineNum = 1; // The current line number
 
@@ -250,7 +235,12 @@ public class Instrumentor {
 		}
 
 		// Print the fileContents to an instrumented source
-		printFile( instrumentedCode, sourceFile.getPath().toString() );
+		try {
+			printFile( instrumentedCode, sourceFile.getPath().toString() );
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -260,7 +250,8 @@ public class Instrumentor {
 	 * @param interestingPoints arraylist of interesting points for a sourcefile
 	 * @return arraylist of instrumentation points
 	 */
-	private ArrayList<InstrumentationPoint> getAutomaticInstrumentationPoints( ArrayList<InterestPoint> interestingPoints ) {
+	private ArrayList<InstrumentationPoint> getAutomaticInstrumentationPoints(
+			ArrayList<InterestPoint> interestingPoints ) {
 
 		AutomaticConfigurationHandler configurationHandler = new AutomaticConfigurationHandler();
 		try {
@@ -314,7 +305,9 @@ public class Instrumentor {
 			}
 
 			// Add the newly made instrumentation point
-			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(), interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange, highDelayRange ) );
+			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(),
+					interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange,
+					highDelayRange ) );
 
 		}
 
@@ -332,31 +325,62 @@ public class Instrumentor {
 
 		// Regex's to match on the import and class statements to allow for the injection of the random variable
 		String importRegex = "(import)(\\s+)((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))([\\.]*)([\\*]*)([\\s]*)(;)";
-		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class)[(\\s)+]([a-z][a-z0-9_])*[(\\s)+](.*?)(\\{)";
+		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z][a-z0-9_])*[(\\s)+](.*?)(\\{)";
 		Pattern importPattern = Pattern.compile( importRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL | Pattern.MULTILINE );
+		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+				| Pattern.MULTILINE );
 		Matcher matcher = null;
 		String finalInstrumentedCode = "";
+		int importEndPos = 0;
+		int classEndPos = 0;
 
 		// Match on the import statement
 		matcher = importPattern.matcher( instrumentedCode );
-		matcher.find();
+		if( matcher.find() ) {
 
-		// Take the ending position of the match
-		int importEndPos = matcher.end();
+			// Append from the start till the end of the matched import and add the import statement
+			importEndPos = matcher.end();
+			finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos )
+					+ _noiseMaker.makeRandImport() );
+		}
+		else { // Try to match on package
 
-		// Append from the start till the end of the matched import and add the import statement
-		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos ) + _noiseMaker.makeRandImport() );
+			// Compile the package regular expression
+			String packageRegex = "(package)(\\s+)((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))([\\.]*)([\\s]*)(;)";
+			Pattern packagePattern = Pattern.compile( packageRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+
+			// Set matcher to find package
+			matcher = packagePattern.matcher( instrumentedCode );
+
+			if( matcher.find() ) {
+
+				// Append from the start till the end of the matched package and add the import statement
+				importEndPos = matcher.end();
+				finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos )
+						+ _noiseMaker.makeRandImport() );
+			}
+			else { // Nothing is found
+
+				// Append the import statement
+				finalInstrumentedCode = finalInstrumentedCode.concat( _noiseMaker.makeRandImport() );
+			}
+		}
 
 		// Match on the class statement
 		matcher = classPattern.matcher( instrumentedCode );
-		matcher.find();
+		if( matcher.find() ) {
+			// Take the ending position of the match
 
-		// Take the ending position of the match
-		int classEndPos = matcher.end();
+			classEndPos = matcher.end();
 
-		// Append from the ending of the import match till the end of the class match, and add the random variable
-		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( importEndPos, classEndPos ) + _noiseMaker.makeRandVariable() );
+			// Append from the ending of the import match till the end of the class match, and add the random variable
+			finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode
+					.substring( importEndPos, classEndPos )
+					+ _noiseMaker.makeRandVariable() );
+		}
+		else { // Class was not found
+			finalInstrumentedCode = finalInstrumentedCode.concat( "\n/* NO CLASS WAS FOUND - ECLIPTICON */" );
+		}
 
 		// Fill in the rest of the instrumented code
 		finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( classEndPos ) );
@@ -388,8 +412,10 @@ public class Instrumentor {
 
 				// Loop backwards from injectionPosition till a valid delimiter is found
 				// TODO Not sure this works on a x.call that is split on two lines
-				// TODO Need to instrument afterwards as well (need to take into account scope) // Need to avoid comments and strings
-				// If in a synchronized block need to check for the correct closing } // Need to avoid comments and strings
+				// TODO Need to instrument afterwards as well (need to take into account scope) // Need to avoid
+				// comments and strings
+				// If in a synchronized block need to check for the correct closing } // Need to avoid comments and
+				// strings
 				for( int j = injectionPosition; j != 0; j-- ) {
 
 					// If the character matches a delimiter
