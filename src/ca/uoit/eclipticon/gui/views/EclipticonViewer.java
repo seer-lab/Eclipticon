@@ -4,8 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import javax.sound.midi.Instrument;
-
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -45,8 +43,9 @@ import ca.uoit.eclipticon.data.AutomaticConfigurationHandler;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
-import ca.uoit.eclipticon.instrumentation.FileParser;
+import ca.uoit.eclipticon.instrumentation.AnnotationParser;
 import ca.uoit.eclipticon.instrumentation.EditorHandler;
+import ca.uoit.eclipticon.instrumentation.FileParser;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
@@ -650,6 +649,41 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	public void setSelection( ISelection arg0, boolean arg1 ) {
 
 	}
+	
+	public void refreshTreeItem(TreeItem parent){
+		
+		SourceFile sf = (SourceFile) parent.getData();
+		sf.clearInstrumentationPoints();
+		_newFP.findInterestPoints( sf );
+		ArrayList<InterestPoint> ips = sf.getInterestingPoints();
+		int count = 0;
+		// Go through it's siblings
+		for( TreeItem i : parent.getItems() ) {
+			InterestPoint ipCurrent = ips.get( count );
+			count++;
+			i.setData( ipCurrent );
+			
+			String[] strings = { "Line: " + ipCurrent.getLine(), ipCurrent.getConstruct(), "" };
+			i.setText( strings );
+			
+			if( ipCurrent instanceof InstrumentationPoint ) {
+				
+				InstrumentationPoint tempIP = (InstrumentationPoint)ipCurrent;
+				if( tempIP.getType() == Constants.SLEEP )
+					i.setText( 2, "Sleep" );
+				else if( tempIP.getType() == Constants.YIELD )
+					i.setText( 2, "Yield" );
+			}
+			
+			
+			// If it comes to a sibling that isn't selected the
+			// root is grayed
+			if( !i.getChecked() ) {
+				parent.setGrayed( true );
+				break;
+			}
+		}
+	}
 
 	@Override
 	public void widgetDefaultSelected( SelectionEvent arg0 ) {
@@ -721,22 +755,43 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 					// Check to see if it was checked or unchecked
 					if( selectedItem.getChecked() ) {
-
-						// Go through it's siblings
-						for( TreeItem i : parent.getItems() ) {
-
-							// If it comes to a sibling that isn't selected the
-							// root is grayed
-							if( !i.getChecked() ) {
-								parent.setGrayed( true );
-								break;
-							}
+						refreshTreeItem( parent );
+						
+						//Create annotation
+						InterestPoint ip = (InterestPoint)selectedItem.getData();
+						InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.YIELD, 100, 0, 1000);
+						AnnotationParser aP = new AnnotationParser();
+						SourceFile sf = (SourceFile) parent.getData();
+						try {
+							_newFP.addAnnotationToFile( sf, ip, aP.createAnnotationComment( instr ) );
 						}
+						catch( IOException e ) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
+						
+						refreshTreeItem( parent );
+						
+						
 					}
 
 					// It was unchecked
 					else {
 						parent.setChecked( false );
+						refreshTreeItem( parent );
+						
+						InstrumentationPoint ip = (InstrumentationPoint)selectedItem.getData();
+						SourceFile sf = (SourceFile) parent.getData();
+						try {
+							_newFP.deleteAnnotation( sf, ip );
+						}
+						catch( IOException e ) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
+						refreshTreeItem( parent );
 						// Go through all the siblings
 						for( TreeItem i : parent.getItems() ) {
 
@@ -830,7 +885,42 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 		// The Widget selected was a Combo box
 		else if( arg0.widget == _cmbType ) {
+			
+			// Look at the table item currently being editted.
+			TreeItem[] item = _tree.getSelection();
+			InstrumentationPoint point = (InstrumentationPoint)item[ 0 ].getData();
 
+			// If the selection differs from the model, raise a flag
+			if( _cmbType.getText().compareTo( "Sleep" ) == 0 ) {
+				if( point.getType() != 0 ) {
+					point.setType( 0 );
+					_modified = true;
+				}
+			}
+			else if( _cmbType.getText().compareTo( "Yield" ) == 0 ){
+				if( point.getType() != 1 ) {
+					point.setType( 1 );
+					_modified = true;
+				}
+			}
+			
+			// If the modified flag is raised, the current tableitem has been changed
+			// so write out to xml
+			if( _modified ) {
+				_modified = false;
+				
+				SourceFile sf = (SourceFile) item[0].getParentItem().getData();
+				refreshTreeItem( item[0].getParentItem() );
+				try {
+					_newFP.editAnnotation( sf, point );
+				}
+				catch( IOException e ) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				refreshTreeItem( item[0].getParentItem() );	
+				
+			}
 		}
 		else if( arg0.widget == _sleepYield ) {
 			// If it was moved set the flag
@@ -914,11 +1004,42 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// Upon the widget loosing focus it checks to see if anything has been modified
 		if( _modified ) {
 
+			// If it has been modified
+			TreeItem[] selectedItem = _tree.getSelection();
+			InstrumentationPoint pointChanging = (InstrumentationPoint)selectedItem[ 0 ].getData();
+			
+			// Find which widget lost focus then update it
+			if( e.widget == _txtHigher ) {
+				pointChanging.setHigh( Integer.parseInt( _txtHigher.getText() ) );
+				temp = 1;
+			}
+			else if( e.widget == _txtLower ) {
+				pointChanging.setLow( Integer.parseInt( _txtLower.getText() ) );
+				temp = 1;
+			}
+			else if( e.widget == _txtProb ) {
+				pointChanging.setProbability( Integer.parseInt( _txtProb.getText() ) );
+				temp = 1;
+			}
+			else if( e.widget == _txtAutoHigher ) {
+				_ach.getConfiguration().setHighDelayRange( Integer.parseInt( _txtAutoHigher.getText() ) );
+			}
+			else if( e.widget == _txtAutoLower ) {
+				_ach.getConfiguration().setLowDelayRange( Integer.parseInt( _txtAutoLower.getText() ) );
+			}
+			// Update the respective XML
+			
 			// Update the respective configuration
 			try {
-				_ach.getConfiguration().setLowDelayRange( Integer.parseInt( _txtAutoLower.getText()));
-				_ach.getConfiguration().setHighDelayRange( Integer.parseInt( _txtAutoHigher.getText()));
-				_ach.writeXml();
+				if (temp == 0)
+					_ach.writeXml();
+				else{
+					refreshTreeItem( selectedItem[0].getParentItem() );
+					SourceFile sf = (SourceFile) selectedItem[0].getParentItem().getData();
+					_newFP.editAnnotation( sf, pointChanging );
+					refreshTreeItem( selectedItem[0].getParentItem() );
+				}
+					
 			}
 			catch( IOException e1 ) {
 				// TODO Auto-generated catch block

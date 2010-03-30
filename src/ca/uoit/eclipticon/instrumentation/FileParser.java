@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
@@ -464,4 +465,189 @@ public class FileParser {
 		}
 		return backupExists;
 	}
+	
+	public void addAnnotationToFile(SourceFile sf, InterestPoint ip, String str) throws IOException{
+		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
+		FileReader fileReader = null;
+		try {
+			fileReader = new FileReader(sf.getPath().toFile());
+		}
+		catch( FileNotFoundException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
+		// If bufferReader is ready start reading the sourceFile
+		try {
+			
+			if( bufReader.ready() ) {
+				String buffer = "";
+				int lineNum = 0;
+				String currentLine;
+				// For as long as there are lines left to read; acquire current one
+				while( ( currentLine = bufReader.readLine() ) != null ) {
+					// When it reaches the line with the Interest Point on it
+					if( lineNum == ( ip.getLine() - 1 ) ) {
+						currentLine = str + "\n" + currentLine;
+					}
+					// Add the currentLine to the buffer
+					buffer = buffer + currentLine + "\n";
+
+					// If the buffer's length is over the buffer size then dump it
+					if( buffer.length() > 127 ) {
+						fileContents.append( buffer );
+						buffer = "";
+					}
+					// Increase the line number
+					lineNum++;
+				}
+
+				// Append the rest of the buffer before exiting
+				fileContents.append( buffer );
+			}
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
+		// Write the fileContent to the new file
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter( sf.getPath().toString() );
+			fw.write( fileContents.toString() );
+		}
+		finally { // Close the writer
+			if( fw != null ) {
+				fw.flush();
+				fw.close();
+			}
+		}
+
+	}
+	
+	
+	public void editAnnotation(SourceFile sf, InstrumentationPoint ip) throws IOException{
+		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
+		FileReader fileReader = null;
+		try {
+			fileReader = new FileReader(sf.getPath().toFile());
+		}
+		catch( FileNotFoundException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
+		// If bufferReader is ready start reading the sourceFile
+		try {
+			
+			if( bufReader.ready() ) {
+				String buffer = "";
+				int lineNum = 0;
+				String currentLine;
+				// For as long as there are lines left to read; acquire current one
+				while( ( currentLine = bufReader.readLine() ) != null ) {
+					// When it reaches the line with the Interest Point on it
+					if( lineNum == ( ip.getLine() - 2 ) ) {
+						AnnotationParser ap = new AnnotationParser();
+						currentLine = ap.updateAnnotationComment( ip, currentLine );
+					}
+					// Add the currentLine to the buffer
+					buffer = buffer + currentLine + "\n";
+
+					// If the buffer's length is over the buffer size then dump it
+					if( buffer.length() > 127 ) {
+						fileContents.append( buffer );
+						buffer = "";
+					}
+					// Increase the line number
+					lineNum++;
+				}
+
+				// Append the rest of the buffer before exiting
+				fileContents.append( buffer );
+			}
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
+		// Write the fileContent to the new file
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter( sf.getPath().toString() );
+			fw.write( fileContents.toString() );
+		}
+		finally { // Close the writer
+			if( fw != null ) {
+				fw.flush();
+				fw.close();
+			}
+		}
+
+	}
+	
+	public void deleteAnnotation(SourceFile sf, InterestPoint ip) throws IOException{
+		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
+		FileReader fileReader = null;
+		try {
+			fileReader = new FileReader(sf.getPath().toFile());
+		}
+		catch( FileNotFoundException e ) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
+		// If bufferReader is ready start reading the sourceFile
+		try {
+			
+			if( bufReader.ready() ) {
+				String buffer = "";
+				int lineNum = 0;
+				String currentLine;
+				// For as long as there are lines left to read; acquire current one
+				while( ( currentLine = bufReader.readLine() ) != null ) {
+					// When it reaches the line with the Interest Point on it
+					if( lineNum == ( ip.getLine() - 2 ) ) {
+						currentLine = "";
+					}
+					else
+						currentLine = currentLine + "\n";
+					// Add the currentLine to the buffer
+					buffer = buffer + currentLine;
+
+					// If the buffer's length is over the buffer size then dump it
+					if( buffer.length() > 127 ) {
+						fileContents.append( buffer );
+						buffer = "";
+					}
+					// Increase the line number
+					lineNum++;
+				}
+
+				// Append the rest of the buffer before exiting
+				fileContents.append( buffer );
+			}
+		}
+		catch( IOException e ) {
+			e.printStackTrace();
+		}
+		// Write the fileContent to the new file
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter( sf.getPath().toString() );
+			fw.write( fileContents.toString() );
+		}
+		finally { // Close the writer
+			if( fw != null ) {
+				fw.flush();
+				fw.close();
+			}
+		}
+	}
+	
+	
+	
+	
+	
 }

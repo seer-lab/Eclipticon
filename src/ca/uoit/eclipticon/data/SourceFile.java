@@ -26,7 +26,7 @@ public class SourceFile {
 	public SourceFile( Path path ) {
 		setPath( path );
 	}
-
+	
 	/**
 	 * Sets the path of the source file and the name of the source file.
 	 * 
@@ -93,5 +93,9 @@ public class SourceFile {
 						+ ip.getConstruct() );
 			}
 		}
+	}
+	
+	public void clearInstrumentationPoints(){
+		_interestingPoints.clear();
 	}
 }
