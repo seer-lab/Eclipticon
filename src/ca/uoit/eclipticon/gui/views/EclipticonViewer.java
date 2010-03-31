@@ -47,6 +47,7 @@ import ca.uoit.eclipticon.instrumentation.AnnotationParser;
 import ca.uoit.eclipticon.instrumentation.EditorHandler;
 import ca.uoit.eclipticon.instrumentation.FileParser;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
+import ca.uoit.eclipticon.instrumentation.PreParser;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
 
@@ -539,9 +540,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 */
 	public void fillTree() {
 
-		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
-
+		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );	
+		
+		// Perform pre-parse
+		PreParser pp = new PreParser(); 
+		pp.findSynchronizedMethods( sources );
+		
 		for( SourceFile sf : sources ) {
+			sf.clearInterestingPoints();
 			_newFP.findInterestPoints( sf );
 			boolean someChecked = false;
 			if( sf.getInterestingPoints().size() > 0 || _test ) {
@@ -653,7 +659,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	public void refreshTreeItem(TreeItem parent){
 		
 		SourceFile sf = (SourceFile) parent.getData();
-		sf.clearInstrumentationPoints();
+		sf.clearInterestingPoints();
 		_newFP.findInterestPoints( sf );
 		ArrayList<InterestPoint> ips = sf.getInterestingPoints();
 		int count = 0;
@@ -845,6 +851,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				// Manual Instrumentation
 				if( arg0.widget == _manualButton ) {
 					for( SourceFile sf : sources ) {
+						sf.clearInterestingPoints();
 						_newFP.findInterestPoints( sf );
 						i.instrument( sf, false );
 					}
@@ -863,6 +870,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 									// If it's a source file
 									if (tI.getData() instanceof SourceFile){
 										SourceFile sf = (SourceFile) tI.getData();
+										sf.clearInterestingPoints();
 										_newFP.findInterestPoints( sf );
 										
 										// Only instrument it if it has points worth looking at.
@@ -926,6 +934,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			// If it was moved set the flag
 			if( _sleepYield.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
 				_ach.getConfiguration().setYieldProbability( _sleepYield.getSelection() );
+				_ach.getConfiguration().setSleepProbability( 100 - _sleepYield.getSelection() );
 				_modified = true;
 			}
 		}
@@ -933,7 +942,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Barrier Scale
 		else if( arg0.widget == _scaleBarrier ) {
 			// If it was moved set the flag
-			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+			if( _scaleBarrier.getSelection() != _ach.getConfiguration().getBarrierProbability() ) {
 				_ach.getConfiguration().setBarrierProbability( _scaleBarrier.getSelection() );
 				_modified = true;
 			}
@@ -942,7 +951,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Latch Scale
 		else if( arg0.widget == _scaleLatches ) {
 			// If it was moved set the flag
-			if( _scaleLatches.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+			if( _scaleLatches.getSelection() != _ach.getConfiguration().getLatchProbability() ) {
 				_ach.getConfiguration().setLatchProbability( _scaleLatches.getSelection() );
 				_modified = true;
 			}
@@ -951,7 +960,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Semaphore Scale
 		else if( arg0.widget == _scaleSemaphores ) {
 			// If it was moved set the flag
-			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+			if( _scaleSemaphores.getSelection() != _ach.getConfiguration().getSemaphoreProbability() ) {
 				_ach.getConfiguration().setSemaphoreProbability( _scaleSemaphores.getSelection() );
 				_modified = true;
 			}
@@ -960,7 +969,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// If the Widget Selected is a Synchronization Scale
 		else if( arg0.widget == _scaleSync ) {
 			// If it was moved set the flag
-			if( _scaleSync.getSelection() != _ach.getConfiguration().getYieldProbability() ) {
+			if( _scaleSync.getSelection() != _ach.getConfiguration().getSynchronizeProbability() ) {
 				_ach.getConfiguration().setSynchronizeProbability( _scaleSync.getSelection() );
 				_modified = true;
 			}
@@ -997,6 +1006,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public void focusLost( FocusEvent e ) {
+		
 		
 		// Flag Variable
 		int temp = 0;

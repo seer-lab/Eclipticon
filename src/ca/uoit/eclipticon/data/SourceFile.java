@@ -11,12 +11,12 @@ import org.eclipse.core.runtime.Path;
  */
 public class SourceFile {
 
-	private Path	_path		= null; // The abstract path name of this source file
-	private int		_numLines	= 0;	// The number of lines this source file has
-	private String	_name		= null; // The name of this source file
+	private Path	_path				= null; // The abstract path name of this source file
+	private String	_name				= null; // The name of this source file
+	private String 	_packageAndImports	= null; // The string of the package and imports of the file
 
 	// A collection of interest points for this source file
-	public ArrayList<InterestPoint> _interestingPoints = new ArrayList<InterestPoint>();
+	private ArrayList<InterestPoint> _interestingPoints = new ArrayList<InterestPoint>();
 
 	/**
 	 * Constructor that will end up creating a source file instance with a source path
@@ -83,6 +83,13 @@ public class SourceFile {
 	}
 
 	/**
+	 * Clears the arraylist of interesting points for this source file.
+	 */
+	public void clearInterestingPoints(){
+		_interestingPoints.clear();
+	}
+
+	/**
 	 * Prints out all the interesting points for this source file along with
 	 * all its related information.
 	 */
@@ -94,8 +101,29 @@ public class SourceFile {
 			}
 		}
 	}
+
+	/**
+	 * Sets the package and imports string.
+	 * 
+	 * @param packageAndImports the new package and import string
+	 */
+	public void setPackageAndImports( String packageAndImports ) {
+		_packageAndImports = packageAndImports;
+	}
 	
-	public void clearInstrumentationPoints(){
-		_interestingPoints.clear();
+	/**
+	 * Gets the package and imports string.
+	 * 
+	 * @return the package and import string
+	 */
+	public String getPackageAndImports() {
+		return _packageAndImports;
+	}
+
+	/**
+	 * Clears the package and import statements for this source file.
+	 */
+	public void clearPackageAndImports() {
+		_packageAndImports = null;
 	}
 }

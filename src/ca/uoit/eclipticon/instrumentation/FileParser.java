@@ -16,11 +16,12 @@ import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
+import ca.uoit.eclipticon.instrumentation.PreParser.SynchronizedMethods;
 
 /**
  * This class is concerned with the acquisition of the files found in a workspace, as well as parsing
  * for {@link InterestPoint} locations given a source file.
- * 
+ *
  * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
  */
 public class FileParser {
@@ -30,7 +31,7 @@ public class FileParser {
 	/**
 	 * Will recursively acquire all the files under the root path, and return an arraylist
 	 * of {@link SourceFile}.
-	 * 
+	 *
 	 * @param root the root path of the workplace
 	 * @return an arraylist of {@link SourceFiles}
 	 */
@@ -76,7 +77,7 @@ public class FileParser {
 	 * This method will find all the potential synchronization constructs within
 	 * the current source file, these points are then turned into {@link InterestPoint}
 	 * and are attached to the source file.
-	 * 
+	 *
 	 * @param source the {@link SourceFile} of interest
 	 */
 	public void findInterestPoints( SourceFile source ) {
@@ -116,6 +117,9 @@ public class FileParser {
 					// Handle appropriate synchronize construct if they reside on current line
 					handleFindingConstructs( curLine, currentLineNum );
 
+					// Handle appropriate synchronized method calls if they reside on current line
+					handleFindingMethods(curLine, currentLineNum, source);
+
 					while( synchronizedOnSameLine ) {
 
 						synchronizedPosition = findNextSynchronized( curLine, currentLineNum, synchronizedPosition );
@@ -130,8 +134,15 @@ public class FileParser {
 							while( typeFound == 0 ) {
 								nextLine = bufReader.readLine();
 								lineNum++;
-								synchronizedPosition = 1; // Reset since new line
-								typeFound = determineSynchronizedType( nextLine, synchronizedPosition );
+
+								// Ensure that an empty line doesn't go through
+								if (nextLine != null){
+									synchronizedPosition = 1; // Reset since new line
+									typeFound = determineSynchronizedType( nextLine, synchronizedPosition );
+								}
+								else {
+									break;
+								}
 							}
 
 							// The synchronized type is a block
@@ -143,7 +154,9 @@ public class FileParser {
 								}
 							}
 							else { // Method is found
-								// Ignore
+
+								// Need to remove the interest point that was added
+								_sequence.remove( _sequence.size()-1 );
 							}
 						}
 						else { // Synchronized is not found, exit
@@ -198,9 +211,59 @@ public class FileParser {
 	}
 
 	/**
+	 * This method will find all the instances of any synchronized method calls that fall on this
+	 * line. The methods are acquired from the pre-parsed instance that previously acquires a collection
+	 * of all the synchronized methods. In addition the package scope is check to reduce the false
+	 * positives found (though it still is not checking on the object type, and is still naive).
+	 *
+	 * @param curLine the current line represented as a string
+	 * @param lineNum the line number
+	 * @param source the source file
+	 */
+	private void handleFindingMethods( String curLine, int lineNum, SourceFile source ) {
+
+		// Acquire a reference to the PreParser to get the synchronized methods
+		PreParser preParser = new PreParser();
+		ArrayList<SynchronizedMethods> synchronizedMethods = preParser.getSynchronizedMethods();
+
+		// Create method signature checker
+		RegExMethodSignature methodSignatureCheck = new RegExMethodSignature();
+
+		int pos = 0; // The last character position
+		int currentPos = 0; // The current character position
+		boolean stillMore = true; // Flag if there are more relevant syntax
+
+		// For this source file find all synchronized method calls that matches
+		for( SynchronizedMethods singleMethod : synchronizedMethods ) {
+
+			stillMore = true;
+
+			// Loop for as long as there is relevant syntax
+			while( stillMore ) {
+
+				// Keep going unless no more method calls are found
+				if( ( currentPos = curLine.indexOf( "." + singleMethod.getName(), pos ) ) != -1 ) {
+
+					// A method call is found, check to see if it is valid, if so add it
+					if (methodSignatureCheck.isMethodImportedInFile( singleMethod.getFilePath(), source.getPackageAndImports())){
+						InterestPoint interestingPoint = new InterestPoint( lineNum, _sequence.size(),
+								Constants.SYNCHRONIZE, "." + singleMethod.getName() );
+						_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+					}
+					pos = currentPos + singleMethod.getName().length() + 1; // +1 is due to the needed '.'
+				}
+				else {
+					stillMore = false;
+				}
+			}
+		}
+	}
+
+	/**
 	 * This method will find the next occurrence from the last synchronized position for a synchronized
-	 * block (syntax) and will add this occurrence to the _sequence arraylist.
-	 * 
+	 * block (syntax) and will add this occurrence to the _sequence arraylist (which might be removed
+	 * depending on if the occurrence turns out to be a synchronized method.
+	 *
 	 * @param curLine the current line that is being checked
 	 * @param currentLineNum the current line number
 	 * @param synchronizedPosition the last position of a found synchronized block on this line
@@ -210,25 +273,16 @@ public class FileParser {
 
 		int pos = synchronizedPosition + 1; // The last character position
 		int currentPos = 0; // The current character position
-		boolean stillMore = true; // Flag if there are more relevant syntax
 
-		// Loop for as long as there is relevant syntax
-		while( stillMore ) {
+		// Look for the next synchronized keyword
+		if( ( currentPos = curLine.indexOf( Constants.SYNCHRONIZE_BLOCK, pos ) ) != -1 ) {
 
-			// Keep going unless no more constructs are found
-			if( ( currentPos = curLine.indexOf( Constants.SYNCHRONIZE_BLOCK, pos ) ) != -1 ) {
-
-				// A construct is found, create an interest point
-				InterestPoint interestingPoint = new InterestPoint( currentLineNum, _sequence.size(),
-						Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK );
-				_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
-				pos = currentPos + Constants.SYNCHRONIZE_BLOCK.length();
-				break; // Exit since we found a synchronized block and need to handle it appropriately
-			}
-			else {
-				stillMore = false;
-			}
+			// A construct is found, create an interest point (might have to remove it, if a method synchronized
+			InterestPoint interestingPoint = new InterestPoint( currentLineNum, _sequence.size(),
+					Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK );
+			_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
 		}
+
 		return currentPos;
 	}
 
@@ -236,9 +290,9 @@ public class FileParser {
 	 * Using the current line and the last synchronized syntax position, an attempt of finding
 	 * the type of synchronized is carried out. If the next valid character is found to be a '('
 	 * then this represents a synchronized block, other wise if any other non-whitespace character
-	 * is found then a synchronized method was found. In the situation where nothing is found then 
+	 * is found then a synchronized method was found. In the situation where nothing is found then
 	 * the next line needs to be examined.
-	 * 
+	 *
 	 * @param curLine the current line that is being checked to determine the the found synchronized type
 	 * @param synchronizedPosition the last position of the found synchronized syntax
 	 * @return 0 = nothing found (try next line) | 1 = block synchronized found | 2 = method synchronized found
@@ -280,7 +334,7 @@ public class FileParser {
 	 * All the synchronized constructs are handled here for the current line that is being examined.
 	 * The only exceptions are the synchronized block and method constructs since they have to be handled
 	 * in a different manner, and are handled elsewhere.
-	 * 
+	 *
 	 * @param curLine the current line for which the constructs are checked on
 	 * @param lineNum the current line number
 	 */
@@ -307,6 +361,7 @@ public class FileParser {
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE );
+
 	}
 
 	/**
@@ -315,10 +370,10 @@ public class FileParser {
 	 * so that it can hold additional data that is not concerned with an {@link InterestPoint}. The order of found points
 	 * is represented as a sequence number, this number is used since the ordering of points on the line can be non
 	 * sequential and will be ordered later.
-	 * 
-	 * @param curLine the current line 
+	 *
+	 * @param curLine the current line
 	 * @param lineNumber the current line's number
-	 * @param construct the synchronization construct 
+	 * @param construct the synchronization construct
 	 * @param syntax the syntax of the synchronization construct
 	 * @param sequenceNum the sequence number
 	 */
@@ -346,10 +401,10 @@ public class FileParser {
 	}
 
 	/**
-	 * The sequence of interest points discovered is usually out of order, and thus needs 
+	 * The sequence of interest points discovered is usually out of order, and thus needs
 	 * re-ordering. This method will correct the sequence's ordering while retaining all the
 	 * additional metadata as found in the {@link SequenceOrdering} class.
-	 * 
+	 *
 	 * @return the ordered arraylist of the sequence ordering
 	 */
 	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
@@ -387,9 +442,9 @@ public class FileParser {
 	}
 
 	/**
-	 * This inner class is a data class used to hold additional metadata such as the character 
+	 * This inner class is a data class used to hold additional metadata such as the character
 	 * position that the {@link InterestPoint} was found at in the source line.
-	 * 
+	 *
 	 * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
 	 */
 	private class SequenceOrdering {
@@ -399,7 +454,7 @@ public class FileParser {
 
 		/**
 		 * Constructor use to instantiate a {@link SequenceOrdering} data class.
-		 * 
+		 *
 		 * @param interestPoint the interest point
 		 * @param characterPosition the character position on the line
 		 * @param constructType the construct type
@@ -411,7 +466,7 @@ public class FileParser {
 
 		/**
 		 * Gets the {@link InterestPoint}.
-		 * 
+		 *
 		 * @return the {@link InterestPoint}
 		 */
 		public InterestPoint getInterestPoint() {
@@ -420,7 +475,7 @@ public class FileParser {
 
 		/**
 		 * Gets the character position.
-		 * 
+		 *
 		 * @return the character position
 		 */
 		public int getCharacterPosition() {
@@ -465,7 +520,7 @@ public class FileParser {
 		}
 		return backupExists;
 	}
-	
+
 	public void addAnnotationToFile(SourceFile sf, InterestPoint ip, String str) throws IOException{
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
@@ -476,11 +531,11 @@ public class FileParser {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
 		// If bufferReader is ready start reading the sourceFile
 		try {
-			
+
 			if( bufReader.ready() ) {
 				String buffer = "";
 				int lineNum = 0;
@@ -524,8 +579,7 @@ public class FileParser {
 		}
 
 	}
-	
-	
+
 	public void editAnnotation(SourceFile sf, InstrumentationPoint ip) throws IOException{
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
@@ -536,11 +590,11 @@ public class FileParser {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
 		// If bufferReader is ready start reading the sourceFile
 		try {
-			
+
 			if( bufReader.ready() ) {
 				String buffer = "";
 				int lineNum = 0;
@@ -585,7 +639,7 @@ public class FileParser {
 		}
 
 	}
-	
+
 	public void deleteAnnotation(SourceFile sf, InterestPoint ip) throws IOException{
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
@@ -596,11 +650,11 @@ public class FileParser {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
 		// If bufferReader is ready start reading the sourceFile
 		try {
-			
+
 			if( bufReader.ready() ) {
 				String buffer = "";
 				int lineNum = 0;
@@ -645,9 +699,4 @@ public class FileParser {
 			}
 		}
 	}
-	
-	
-	
-	
-	
 }
