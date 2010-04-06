@@ -227,7 +227,7 @@ public class FileParser {
 		ArrayList<SynchronizedMethods> synchronizedMethods = preParser.getSynchronizedMethods();
 
 		// Create method signature checker
-		RegExMethodSignature methodSignatureCheck = new RegExMethodSignature();
+		MethodCallValidator methodSignatureCheck = new MethodCallValidator();
 
 		int pos = 0; // The last character position
 		int currentPos = 0; // The current character position
