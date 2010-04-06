@@ -57,103 +57,42 @@ public class SourceFileTest extends TestCase {
 		if( _sourceFile.getName().equals( _name ) && ( _sourceFile.getPath().toString().equals( _path ) ) ) {
 			result = true;
 		}
-
+		
 		assertEquals( true, result );
 	}
 
 	@Test
 	public void testGetPath() {
-
-		boolean result = false;
-
-		if( _sourceFile.getPath().toString().equals( _path ) ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
+		assertEquals( _path, _sourceFile.getPath().toString() );
 	}
 
 	@Test
 	public void testGetName() {
-
-		boolean result = false;
-
-		if( _sourceFile.getName().equals( _name ) ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
+		assertEquals( _name, _sourceFile.getName() );
 	}
 
 	@Test
-	public void testAddInterestingPoint() {
-
-		boolean result = false;
+	public void testAddAndGetInterestingPoints() {
 
 		_sourceFile.addInterestingPoint( _interestingPoint );
 
-		if( _sourceFile.getInterestingPoints().size() == 1 ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
-	}
-
-	@Test
-	public void testGetInterestingPoints() {
-
-		boolean result = false;
-
-		_sourceFile.addInterestingPoint( _interestingPoint );
-
-		if( _sourceFile.getInterestingPoints().get( 0 ).equals( _interestingPoint ) ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
+		assertEquals( _interestingPoint, _sourceFile.getInterestingPoints().get( 0 ) );
 	}
 
 	@Test
 	public void testClearInterestingPoints() {
 
-		boolean result = false;
-
 		_sourceFile.addInterestingPoint( _interestingPoint );
-
 		_sourceFile.clearInterestingPoints();
 
-		if( _sourceFile.getInterestingPoints().size() == 0 ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
+		assertEquals( 0, _sourceFile.getInterestingPoints().size() );
 	}
 
 	@Test
-	public void testSetPackageAndImports() {
-
-		boolean result = false;
+	public void testSetAndGetPackageAndImports() {
 
 		_sourceFile.setPackageAndImports( _imports );
 
-		if( _sourceFile.getPackageAndImports().equals( _imports ) ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
-	}
-
-	@Test
-	public void testGetPackageAndImports() {
-
-		boolean result = false;
-
-		_sourceFile.setPackageAndImports( _imports );
-
-		if( _sourceFile.getPackageAndImports().equals( _imports ) ) {
-			result = true;
-		}
-
-		assertEquals( true, result );
+		assertEquals( _imports, _sourceFile.getPackageAndImports() );
 	}
 }

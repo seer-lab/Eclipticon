@@ -18,9 +18,7 @@ import org.junit.Test;
 import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.SourceFile;
-import ca.uoit.eclipticon.gui.Activator;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
-import ca.uoit.eclipticon.parsers.PreParser;
 
 public class InstrumentorTest extends TestCase {
 
@@ -31,7 +29,6 @@ public class InstrumentorTest extends TestCase {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		new Activator();
 	}
 
 	@AfterClass
