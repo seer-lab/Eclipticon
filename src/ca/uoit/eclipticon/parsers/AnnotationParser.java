@@ -1,7 +1,8 @@
-package ca.uoit.eclipticon.instrumentation;
+package ca.uoit.eclipticon.parsers;
 import java.util.regex.*;
 
 import ca.uoit.eclipticon.data.InstrumentationPoint;
+import ca.uoit.eclipticon.instrumentation.PreemptionPoint;
 
 /**
  * The AnnotationParser class extracts the parameters from a given

@@ -25,7 +25,7 @@ public final class Constants {
 	static public String	SYNCHRONIZE_NEWCONDITION			= ".newCondition";
 
 	/** These are the syntax representation of latch constructs */
-	static public String	LATCH_COUNTDOWN						= ".countdown";
+	static public String	LATCH_COUNTDOWN						= ".countDown";
 	static public String	LATCH_AWAIT							= ".await";
 
 	/** These are the syntax representation of barrier constructs */
