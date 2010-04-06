@@ -326,7 +326,7 @@ public class Instrumentor {
 	private String addRandImportAndVariable( String instrumentedCode ) {
 
 		// Regex's to match on the import and class statements to allow for the injection of the random variable
-		String importRegex = "(import)(\\s+)((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))([\\.]*)([\\*]*)([\\s]*)(;)";
+		String importRegex =  "([import]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\*]*[\\s]*;)";
 		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z]+[a-z0-9_])*[(\\s)+](.*?)(\\{)";
 		Pattern importPattern = Pattern.compile( importRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
 		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
@@ -348,7 +348,7 @@ public class Instrumentor {
 		else { // Try to match on package
 
 			// Compile the package regular expression
-			String packageRegex = "(package)(\\s+)((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))([\\.]*)([\\s]*)(;)";
+			String packageRegex = "([package]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\s]*;)";
 			Pattern packagePattern = Pattern.compile( packageRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
 
 			// Set matcher to find package

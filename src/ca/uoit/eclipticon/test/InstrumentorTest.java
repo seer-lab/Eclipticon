@@ -24,10 +24,10 @@ import ca.uoit.eclipticon.parsers.PreParser;
 
 public class InstrumentorTest extends TestCase {
 
-	private SourceFile		sourceFile			= null;
-	ArrayList<SourceFile>	sources				= new ArrayList<SourceFile>();
-	private Instrumentor	instrumentor		= null;
-	private String			packageAndImports	= "package ca.uoit.eclipticon.test.instrumentor_tests;\n\nimport java.util.concurrent.*;\n\nimport ca.uoit.eclipticon.instrumentation.*;";
+	private SourceFile		_sourceFile			= null;
+	ArrayList<SourceFile>	_sources				= new ArrayList<SourceFile>();
+	private Instrumentor	_instrumentor		= null;
+	private String			_packageAndImports	= "package ca.uoit.eclipticon.test.instrumentor_tests;\n\nimport java.util.concurrent.*;\n\nimport ca.uoit.eclipticon.instrumentation.*;";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -40,12 +40,12 @@ public class InstrumentorTest extends TestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		instrumentor = new Instrumentor();
+		_instrumentor = new Instrumentor();
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		instrumentor.revertToOriginalState( sourceFile );
+		_instrumentor.revertToOriginalState( _sourceFile );
 	}
 
 	// @Test
@@ -57,22 +57,22 @@ public class InstrumentorTest extends TestCase {
 	public void testInstrumentSimple() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test1.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
 				Constants.SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -86,31 +86,31 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentMultiple() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test2.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
 				Constants.SLEEP, 1, 11, 111 ) );
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 11, 0, Constants.LATCH, Constants.LATCH_COUNTDOWN,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 11, 0, Constants.LATCH, Constants.LATCH_COUNTDOWN,
 				Constants.SLEEP, 2, 22, 222 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -124,31 +124,31 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentMultipleOnSameLine() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test3.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
 				Constants.SLEEP, 1, 11, 111 ) );
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.LATCH, Constants.LATCH_COUNTDOWN,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.LATCH, Constants.LATCH_COUNTDOWN,
 				Constants.SLEEP, 2, 22, 222 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -162,29 +162,29 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentValidMethodCall() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test4.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
 				Constants.SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -198,29 +198,29 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentMethodCallAfterMethodCall() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test5.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
 				Constants.SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -234,29 +234,29 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentMethodWithinMethod() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test6.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
 				Constants.SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -270,29 +270,29 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentSynchronizedMethodBlock() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test7.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE,
 				Constants.SYNCHRONIZE_BLOCK, Constants.SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -306,31 +306,31 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 
 	@Test
 	public void testInstrumentMultipleSynchronizedBlockMethodOnSameLine() throws IOException {
 
 		// Set the source file up
-		sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
+		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
 				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test8.txt" ).getPath() ) );
-		sources.add( sourceFile );
+		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
-		sourceFile.setPackageAndImports( packageAndImports );
+		_sourceFile.setPackageAndImports( _packageAndImports );
 
 		// Add the instrumentation points
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE,
 				Constants.SYNCHRONIZE_BLOCK, Constants.SLEEP, 1, 11, 111 ) );
-		sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 1, Constants.SYNCHRONIZE,
+		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 1, Constants.SYNCHRONIZE,
 				Constants.SYNCHRONIZE_BLOCK, Constants.SLEEP, 2, 22, 222 ) );
 
 		// Manual Instrument the source file
-		instrumentor.instrument( sourceFile, false );
+		_instrumentor.instrument( _sourceFile, false );
 
 		// Create a string to represent the results and the expected solution
-		BufferedReader bufReader = new BufferedReader( new FileReader( sourceFile.getPath().toFile() ) );
+		BufferedReader bufReader = new BufferedReader( new FileReader( _sourceFile.getPath().toFile() ) );
 		String line = null;
 		String testResult = "";
 		String testSolution = "";
@@ -344,6 +344,6 @@ public class InstrumentorTest extends TestCase {
 			testSolution = testSolution.concat( line + "\n" );
 		}
 
-		assertEquals( testResult.trim(), testSolution.trim() );
+		assertEquals( testSolution.trim(), testResult.trim() );
 	}
 }
