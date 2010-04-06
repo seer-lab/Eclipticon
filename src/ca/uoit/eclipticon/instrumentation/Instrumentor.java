@@ -254,6 +254,7 @@ public class Instrumentor {
 			ArrayList<InterestPoint> interestingPoints ) {
 
 		AutomaticConfigurationHandler configurationHandler = new AutomaticConfigurationHandler();
+
 		try {
 			configurationHandler.readXml();
 		}
@@ -261,6 +262,7 @@ public class Instrumentor {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
 		AutomaticConfiguration configuration = configurationHandler.getConfiguration();
 
 		int lowDelayRange = configuration.getLowDelayRange();
@@ -325,7 +327,7 @@ public class Instrumentor {
 
 		// Regex's to match on the import and class statements to allow for the injection of the random variable
 		String importRegex = "(import)(\\s+)((?:[a-z][a-z\\.\\d\\-]+)\\.(?:[a-z][a-z\\-]+))([\\.]*)([\\*]*)([\\s]*)(;)";
-		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z][a-z0-9_])*[(\\s)+](.*?)(\\{)";
+		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z]+[a-z0-9_])*[(\\s)+](.*?)(\\{)";
 		Pattern importPattern = Pattern.compile( importRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
 		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
 				| Pattern.MULTILINE );
@@ -410,20 +412,24 @@ public class Instrumentor {
 				// Point is found, now to backtrack from this point till a valid statement delimiter is found
 				injectionPosition = currentLine.indexOf( point.getConstructSyntax(), injectionPosition );
 
+				/*
+				 * TODO Need to instrument afterwards as well (need to take into account scope)
+				 * TODO If in a synchronized block need to check for the correct closing }
+				 * TODO Need to ensure that the method of ending the injection point is valid
+				 */
 				// Loop backwards from injectionPosition till a valid delimiter is found
-				// TODO Not sure this works on a x.call that is split on two lines
-				// TODO Need to instrument afterwards as well (need to take into account scope) // Need to avoid
-				// comments and strings
-				// If in a synchronized block need to check for the correct closing } // Need to avoid comments and
-				// strings
-				for( int j = injectionPosition; j != 0; j-- ) {
+				for( int j = injectionPosition; j >= 0; j-- ) {
 
 					// If the character matches a delimiter
-					if( Character.toString( currentLine.charAt( j ) ).matches( "[(\\s+)]|[;]|[}]|[{]|[\\)]" ) ) {
+					if( Character.toString( currentLine.charAt( j ) ).matches( "[;]|[}]|[{]" ) ) {
 
 						// Adjust to the new position
 						injectionPosition = j + 1;
 						break;
+					}
+
+					if( j == 0 ) { // Nothing was found, place noise at the start of the line
+						injectionPosition = j;
 					}
 				}
 			}

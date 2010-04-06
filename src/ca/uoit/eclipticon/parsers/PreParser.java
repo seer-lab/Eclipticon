@@ -1,4 +1,4 @@
-package ca.uoit.eclipticon.instrumentation;
+package ca.uoit.eclipticon.parsers;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

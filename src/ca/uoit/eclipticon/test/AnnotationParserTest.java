@@ -6,7 +6,7 @@ import java.io.PrintStream;
 import junit.framework.TestCase;
 
 import ca.uoit.eclipticon.data.InstrumentationPoint;
-import ca.uoit.eclipticon.instrumentation.AnnotationParser;
+import ca.uoit.eclipticon.parsers.AnnotationParser;
 import ca.uoit.eclipticon.Constants;
 
 
@@ -39,7 +39,6 @@ public class AnnotationParserTest extends TestCase {
 		
 	}
 
-	
 	@Test public void testSearchForAndChangeCommentBasedOnSequenceNumberThatExistsInComment() {
 		
 		// update the instrumentation point

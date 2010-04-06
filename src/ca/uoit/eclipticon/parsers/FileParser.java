@@ -1,4 +1,4 @@
-package ca.uoit.eclipticon.instrumentation;
+package ca.uoit.eclipticon.parsers;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,7 +16,7 @@ import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
-import ca.uoit.eclipticon.instrumentation.PreParser.SynchronizedMethods;
+import ca.uoit.eclipticon.parsers.PreParser.SynchronizedMethods;
 
 /**
  * This class is concerned with the acquisition of the files found in a workspace, as well as parsing
@@ -118,7 +118,7 @@ public class FileParser {
 					handleFindingConstructs( curLine, currentLineNum );
 
 					// Handle appropriate synchronized method calls if they reside on current line
-					handleFindingMethods(curLine, currentLineNum, source);
+					handleFindingMethods( curLine, currentLineNum, source );
 
 					while( synchronizedOnSameLine ) {
 
@@ -136,7 +136,7 @@ public class FileParser {
 								lineNum++;
 
 								// Ensure that an empty line doesn't go through
-								if (nextLine != null){
+								if( nextLine != null ) {
 									synchronizedPosition = 1; // Reset since new line
 									typeFound = determineSynchronizedType( nextLine, synchronizedPosition );
 								}
@@ -156,7 +156,7 @@ public class FileParser {
 							else { // Method is found
 
 								// Need to remove the interest point that was added
-								_sequence.remove( _sequence.size()-1 );
+								_sequence.remove( _sequence.size() - 1 );
 							}
 						}
 						else { // Synchronized is not found, exit
@@ -242,15 +242,28 @@ public class FileParser {
 			while( stillMore ) {
 
 				// Keep going unless no more method calls are found
-				if( ( currentPos = curLine.indexOf( "." + singleMethod.getName(), pos ) ) != -1 ) {
+				if( ( currentPos = curLine.indexOf( singleMethod.getName(), pos ) ) != -1 ) {
 
-					// A method call is found, check to see if it is valid, if so add it
-					if (methodSignatureCheck.isMethodImportedInFile( singleMethod.getFilePath(), source.getPackageAndImports())){
-						InterestPoint interestingPoint = new InterestPoint( lineNum, _sequence.size(),
-								Constants.SYNCHRONIZE, "." + singleMethod.getName() );
-						_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+					// Construct was possibly found, now to verify based on previous character
+					if( Character.toString( curLine.charAt( currentPos ) ).matches( "[\\s]|[\\)]|[\\(]|[;]|[}]|[{]" ) ) {
+
+						if( currentPos + singleMethod.getName().length() < curLine.length() ) {
+
+							if( Character.toString( curLine.charAt( currentPos + singleMethod.getName().length() ) )
+									.matches( "[\\s]|[\\(]" ) ) {
+
+								// A method call is found, check to see if it is valid, if so add it
+								if( methodSignatureCheck.isMethodImportedInFile( singleMethod.getFilePath(), source
+										.getPackageAndImports() ) ) {
+									InterestPoint interestingPoint = new InterestPoint( lineNum, _sequence.size(),
+											Constants.SYNCHRONIZE, singleMethod.getName() );
+									_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+								}
+							}
+						}
 					}
-					pos = currentPos + singleMethod.getName().length() + 1; // +1 is due to the needed '.'
+
+					pos = currentPos + singleMethod.getName().length();
 				}
 				else {
 					stillMore = false;
@@ -361,7 +374,6 @@ public class FileParser {
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE );
-
 	}
 
 	/**
@@ -389,9 +401,22 @@ public class FileParser {
 			// Keep going unless no more constructs are found
 			if( ( currentPos = curLine.indexOf( syntax, pos ) ) != -1 ) {
 
-				// A construct is found, create an interest point
-				InterestPoint interestingPoint = new InterestPoint( lineNumber, _sequence.size(), construct, syntax );
-				_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+				// Construct was possibly found, now to verify based on previous character
+				if( Character.toString( curLine.charAt( currentPos ) ).matches( "[\\.]|[\\s]|[\\)]|[\\(]|[;]|[}]|[{]" ) ) {
+
+					if( currentPos + syntax.length() < curLine.length() ) {
+
+						// Now to compare to the next character
+						if( Character.toString( curLine.charAt( currentPos + syntax.length() ) )
+								.matches( "[\\s]|[\\(]" ) ) {
+
+							// A construct is found, create an interest point
+							InterestPoint interestingPoint = new InterestPoint( lineNumber, _sequence.size(),
+									construct, syntax );
+							_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+						}
+					}
+				}
 				pos = currentPos + syntax.length();
 			}
 			else {
@@ -521,18 +546,18 @@ public class FileParser {
 		return backupExists;
 	}
 
-	public void addAnnotationToFile(SourceFile sf, InterestPoint ip, String str) throws IOException{
+	public void addAnnotationToFile( SourceFile sf, InterestPoint ip, String str ) throws IOException {
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
 		try {
-			fileReader = new FileReader(sf.getPath().toFile());
+			fileReader = new FileReader( sf.getPath().toFile() );
 		}
 		catch( FileNotFoundException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
+		BufferedReader bufReader = new BufferedReader( fileReader );// Get a buffer reader of this file
 		// If bufferReader is ready start reading the sourceFile
 		try {
 
@@ -580,18 +605,18 @@ public class FileParser {
 
 	}
 
-	public void editAnnotation(SourceFile sf, InstrumentationPoint ip) throws IOException{
+	public void editAnnotation( SourceFile sf, InstrumentationPoint ip ) throws IOException {
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
 		try {
-			fileReader = new FileReader(sf.getPath().toFile());
+			fileReader = new FileReader( sf.getPath().toFile() );
 		}
 		catch( FileNotFoundException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
+		BufferedReader bufReader = new BufferedReader( fileReader );// Get a buffer reader of this file
 		// If bufferReader is ready start reading the sourceFile
 		try {
 
@@ -640,18 +665,18 @@ public class FileParser {
 
 	}
 
-	public void deleteAnnotation(SourceFile sf, InterestPoint ip) throws IOException{
+	public void deleteAnnotation( SourceFile sf, InterestPoint ip ) throws IOException {
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
 		try {
-			fileReader = new FileReader(sf.getPath().toFile());
+			fileReader = new FileReader( sf.getPath().toFile() );
 		}
 		catch( FileNotFoundException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		BufferedReader bufReader = new BufferedReader(fileReader);// Get a buffer reader of this file
+		BufferedReader bufReader = new BufferedReader( fileReader );// Get a buffer reader of this file
 		// If bufferReader is ready start reading the sourceFile
 		try {
 

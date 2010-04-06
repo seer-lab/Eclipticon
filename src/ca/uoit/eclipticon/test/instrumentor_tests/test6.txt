@@ -1,0 +1,16 @@
+package ca.uoit.eclipticon.test.instrumentor_tests;
+
+import java.util.concurrent.*;
+
+import ca.uoit.eclipticon.instrumentation.*;
+
+public class test5 extends Object {
+
+	public void testing() throws InterruptedException, BrokenBarrierException {
+		int a = 0; String s = Integer.toString(new test5().methodCall());
+	}
+	
+	public int methodCall() {
+		return 1;
+	}
+}
