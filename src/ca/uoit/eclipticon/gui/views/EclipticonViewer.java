@@ -43,11 +43,11 @@ import ca.uoit.eclipticon.data.AutomaticConfigurationHandler;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
-import ca.uoit.eclipticon.instrumentation.AnnotationParser;
-import ca.uoit.eclipticon.instrumentation.EditorHandler;
-import ca.uoit.eclipticon.instrumentation.FileParser;
+import ca.uoit.eclipticon.gui.EditorHandler;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
-import ca.uoit.eclipticon.instrumentation.PreParser;
+import ca.uoit.eclipticon.parsers.AnnotationParser;
+import ca.uoit.eclipticon.parsers.FileParser;
+import ca.uoit.eclipticon.parsers.PreParser;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
 
@@ -84,7 +84,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// TODO Auto-generated constructor stub
 		super();
 		_newFP = new FileParser();
-		ResourcesPlugin.getWorkspace();
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IWorkspaceRoot root = workspace.getRoot();
 
