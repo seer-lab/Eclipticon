@@ -24,15 +24,6 @@ public class SourceFile {
 	 * @param path the source file path
 	 */
 	public SourceFile( Path path ) {
-		setPath( path );
-	}
-	
-	/**
-	 * Sets the path of the source file and the name of the source file.
-	 * 
-	 * @param path the source file path
-	 */
-	public void setPath( Path path ) {
 		_path = path;
 		_name = _path.lastSegment();
 	}
@@ -65,15 +56,6 @@ public class SourceFile {
 	}
 
 	/**
-	 * Add an arraylist of interesting points to this source file.
-	 * 
-	 * @param points an arraylist of interesting points
-	 */
-	public void addInterestingPoints( ArrayList<InterestPoint> points ) {
-		_interestingPoints.addAll( points );
-	}
-
-	/**
 	 * Gets the arraylist of interesting points in this source file.
 	 * 
 	 * @return an arraylist of interesting points
@@ -87,19 +69,6 @@ public class SourceFile {
 	 */
 	public void clearInterestingPoints(){
 		_interestingPoints.clear();
-	}
-
-	/**
-	 * Prints out all the interesting points for this source file along with
-	 * all its related information.
-	 */
-	public void printIP() {
-		if( !_interestingPoints.isEmpty() ) {
-			for( InterestPoint ip : _interestingPoints ) {
-				System.out.println( "\tLine: " + ip.getLine() + " | Instance: " + ip.getSequence() + " | "
-						+ ip.getConstruct() );
-			}
-		}
 	}
 
 	/**
@@ -118,12 +87,5 @@ public class SourceFile {
 	 */
 	public String getPackageAndImports() {
 		return _packageAndImports;
-	}
-
-	/**
-	 * Clears the package and import statements for this source file.
-	 */
-	public void clearPackageAndImports() {
-		_packageAndImports = null;
 	}
 }

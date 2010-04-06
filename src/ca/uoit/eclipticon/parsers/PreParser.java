@@ -80,7 +80,6 @@ public class PreParser {
 
 			// If a match is found store the package and import statements
 			if( matcher.find() ) {
-				source.clearPackageAndImports();
 				source.setPackageAndImports( contents.substring( 0, matcher.start() ) );
 			}
 		}

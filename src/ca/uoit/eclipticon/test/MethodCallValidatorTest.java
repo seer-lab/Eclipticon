@@ -24,7 +24,7 @@ public class MethodCallValidatorTest extends TestCase {
 	private Path				_windowsMissMethodPath	= new Path(
 																"\\eclipticon\\src\\ca\\uoit\\eclipticon\\Constants.java" );
 	private Path				_unixMissMethodPath		= new Path( "/eclipticon/src/ca/uoit/eclipticon/Constants.java" );
-	private String				_import					= "import ca.uoit.eclipticon.instrumentation;\\nimport ca.uoit.eclipticon.test;";
+	private String				_import					= "import ca.uoit.eclipticon.instrumentation;\nimport ca.uoit.eclipticon.test;";
 	private String				_badFormattedImport		= "import   ca . uoit  .eclipticon.instrumentation   ;import ca.uoit .   eclipticon.test;";
 	private String				_package				= "package ca.uoit.eclipticon.test;";
 	private String				_badFormattedPackage	= "package   ca . uoit  .eclipticon.test ;";
