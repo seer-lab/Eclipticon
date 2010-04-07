@@ -1,4 +1,4 @@
-package ca.uoit.eclipticon.test.instrumentor_tests;
+package ca.uoit.eclipticon.test.testfiles;
 
 import java.util.concurrent.*;
 
@@ -7,10 +7,10 @@ import ca.uoit.eclipticon.instrumentation.*;
 public class test5 extends Object {
 
 	public void testing() throws InterruptedException, BrokenBarrierException {
-		int a = 0; String s = Integer.toString(new test5().methodCall());
+		int a = 0; int i = new test5().methodCall();
 	}
 	
-	public int methodCall() {
+	synchronized public int methodCall() {
 		return 1;
 	}
 }

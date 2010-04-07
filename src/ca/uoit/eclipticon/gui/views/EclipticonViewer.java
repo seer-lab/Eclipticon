@@ -768,7 +768,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						AnnotationParser aP = new AnnotationParser();
 						SourceFile sf = (SourceFile) parent.getData();
 						try {
-							_newFP.addAnnotationToFile( sf, ip, aP.createAnnotationComment( instr ) );
+							_newFP.manipulateAnnotation( sf, instr, 2 ); // Add annotation
 						}
 						catch( IOException e ) {
 							// TODO Auto-generated catch block
@@ -789,7 +789,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						InstrumentationPoint ip = (InstrumentationPoint)selectedItem.getData();
 						SourceFile sf = (SourceFile) parent.getData();
 						try {
-							_newFP.deleteAnnotation( sf, ip );
+							_newFP.manipulateAnnotation( sf, ip, 0); // Delete annotation
 						}
 						catch( IOException e ) {
 							// TODO Auto-generated catch block
@@ -919,7 +919,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				SourceFile sf = (SourceFile) item[0].getParentItem().getData();
 				refreshTreeItem( item[0].getParentItem() );
 				try {
-					_newFP.editAnnotation( sf, point );
+					_newFP.manipulateAnnotation( sf, point, 1 ); // Update annotation
 				}
 				catch( IOException e ) {
 					// TODO Auto-generated catch block
@@ -1045,7 +1045,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				else{
 					refreshTreeItem( selectedItem[0].getParentItem() );
 					SourceFile sf = (SourceFile) selectedItem[0].getParentItem().getData();
-					_newFP.editAnnotation( sf, pointChanging );
+					_newFP.manipulateAnnotation( sf, pointChanging, 1 ); // Update annotation
 					refreshTreeItem( selectedItem[0].getParentItem() );
 				}
 					

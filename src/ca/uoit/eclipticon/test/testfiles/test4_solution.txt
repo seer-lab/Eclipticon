@@ -1,4 +1,4 @@
-package ca.uoit.eclipticon.test.instrumentor_tests;
+package ca.uoit.eclipticon.test.testfiles;
 
 import java.util.concurrent.*;import java.util.Random;
 
@@ -10,7 +10,7 @@ public class test4 extends Object {Random _____rand0123456789_____ = new Random(
 		int a = 0;if((_____rand0123456789_____.nextInt(100-0)+0)<=1)try{Thread.sleep((_____rand0123456789_____.nextInt(111-11)+11));}catch(Exception e){}; int i = methodCall();
 	}
 	
-	public int methodCall() {
+	synchronized public int methodCall() {
 		return 1;
 	}
 }

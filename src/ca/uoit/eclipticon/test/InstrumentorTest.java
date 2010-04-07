@@ -22,10 +22,10 @@ import ca.uoit.eclipticon.instrumentation.Instrumentor;
 
 public class InstrumentorTest extends TestCase {
 
-	private SourceFile		_sourceFile			= null;
-	ArrayList<SourceFile>	_sources				= new ArrayList<SourceFile>();
-	private Instrumentor	_instrumentor		= null;
-	private String			_packageAndImports	= "package ca.uoit.eclipticon.test.instrumentor_tests;\n\nimport java.util.concurrent.*;\n\nimport ca.uoit.eclipticon.instrumentation.*;";
+	private SourceFile				_sourceFile			= null;
+	private ArrayList<SourceFile>	_sources			= new ArrayList<SourceFile>();
+	private Instrumentor			_instrumentor		= null;
+	private String					_packageAndImports	= "package ca.uoit.eclipticon.test.instrumentor_tests;\n\nimport java.util.concurrent.*;\n\nimport ca.uoit.eclipticon.instrumentation.*;";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -55,7 +55,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test1.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test1.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -78,7 +78,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test1_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test1_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -91,7 +91,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test2.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test2.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -116,7 +116,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test2_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test2_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -129,7 +129,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test3.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test3.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -154,7 +154,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test3_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test3_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -163,11 +163,11 @@ public class InstrumentorTest extends TestCase {
 	}
 
 	@Test
-	public void testInstrumentValidMethodCall() throws IOException {
+	public void testInstrumentMethodCall() throws IOException {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test4.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test4.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -190,7 +190,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test4_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test4_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -199,11 +199,11 @@ public class InstrumentorTest extends TestCase {
 	}
 
 	@Test
-	public void testInstrumentMethodCallAfterMethodCall() throws IOException {
+	public void testInstrumentMethodAfterMethod() throws IOException {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test5.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test5.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -226,7 +226,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test5_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test5_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -239,7 +239,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test6.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test6.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -262,7 +262,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test6_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test6_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -275,7 +275,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test7.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test7.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -298,7 +298,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test7_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test7_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}
@@ -311,7 +311,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test8.txt" ).getPath() ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test8.txt" ).getPath() ) );
 		_sources.add( _sourceFile );
 
 		// Add package and imports to source file
@@ -336,7 +336,7 @@ public class InstrumentorTest extends TestCase {
 		}
 
 		bufReader = new BufferedReader( new FileReader( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/instrumentor_tests/test8_solution.txt" ) ) );
+				+ "/src/ca/uoit/eclipticon/test/testfiles/test8_solution.txt" ) ) );
 		while( ( line = bufReader.readLine() ) != null ) {
 			testSolution = testSolution.concat( line + "\n" );
 		}

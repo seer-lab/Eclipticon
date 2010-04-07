@@ -26,7 +26,7 @@ import ca.uoit.eclipticon.parsers.PreParser.SynchronizedMethods;
  */
 public class FileParser {
 
-	private ArrayList<SequenceOrdering>	_sequence	= new ArrayList<SequenceOrdering>();	// Sequence of constructs
+	private ArrayList<InterestPoint>	_interestPointsOnLine	= new ArrayList<InterestPoint>();
 
 	/**
 	 * Will recursively acquire all the files under the root path, and return an arraylist
@@ -155,8 +155,20 @@ public class FileParser {
 							}
 							else { // Method is found
 
-								// Need to remove the interest point that was added
-								_sequence.remove( _sequence.size() - 1 );
+								// Remove the two last interest point that was added (synchronized and the method)
+								_interestPointsOnLine.remove( _interestPointsOnLine.size() - 1 );
+								
+								// If null then remove last interest point in the sourcefile (ie: has moved lines)
+								if (_interestPointsOnLine.size() == 0){
+									
+									// If the source has more then one point remove it, otherwise skip
+									if (source.getInterestingPoints().size() > 0){										
+										source.getInterestingPoints().remove( source.getInterestingPoints().size()-1 );
+									}
+								}
+								else{									
+									_interestPointsOnLine.remove( _interestPointsOnLine.size() - 1 );
+								}
 							}
 						}
 						else { // Synchronized is not found, exit
@@ -165,33 +177,25 @@ public class FileParser {
 					}
 
 					// If there are points found then figure out order and add the points
-					if( _sequence.size() > 0 ) {
-
-						// Fix the ordering of the interest points
-						ArrayList<SequenceOrdering> orderedPoints = correctSequenceOrdering();
-						int sequenceNumber = 0;
+					if( _interestPointsOnLine.size() > 0 ) {
 
 						// For each point found, figure out if it is an instrumentation or interest point
-						for( SequenceOrdering sequencePoint : orderedPoints ) {
+						for( InterestPoint interestPoint : _interestPointsOnLine ) {
 
 							// Figure out if this interest point was already annotated to be an instrumentation point
 							InstrumentationPoint instrumentationPoint = annotationParser.parseLineForAnnotations(
-									prevLine, currentLineNum, sequenceNumber, sequencePoint.getInterestPoint()
-											.getConstruct(), sequencePoint.getInterestPoint().getConstructSyntax() );
-							sequenceNumber++;
+									prevLine, currentLineNum, interestPoint.getSequence(), interestPoint
+											.getConstruct(), interestPoint.getConstructSyntax() );
 
-							// Check for a null value, if so then instrumentation point wasn't there (it is an interest
-							// point)
+							// Check for a null, if so then instrumentation point wasn't there (it is an interest point)
 							if( instrumentationPoint == null ) {
-
-								source.addInterestingPoint( sequencePoint.getInterestPoint() );
+								source.addInterestingPoint( interestPoint );
 							}
 							else {
-
 								source.addInterestingPoint( instrumentationPoint );
 							}
 						}
-						_sequence.clear();
+						_interestPointsOnLine.clear();
 					}
 
 					// If both line numbers are the same then we didn't move due to the synchronized
@@ -237,6 +241,7 @@ public class FileParser {
 		for( SynchronizedMethods singleMethod : synchronizedMethods ) {
 
 			stillMore = true;
+			int sequenceNumber = 0; // Sequence number of the current method call
 
 			// Loop for as long as there is relevant syntax
 			while( stillMore ) {
@@ -244,26 +249,28 @@ public class FileParser {
 				// Keep going unless no more method calls are found
 				if( ( currentPos = curLine.indexOf( singleMethod.getName(), pos ) ) != -1 ) {
 
-					// Construct was possibly found, now to verify based on previous character
-					if( Character.toString( curLine.charAt( currentPos ) ).matches( "[\\s]|[\\)]|[\\(]|[;]|[}]|[{]" ) ) {
+					// Construct was possibly found, now to verify if previous character is a non-word
+					if( Character.toString( curLine.charAt( currentPos - 1 ) ).matches( "[\\W]" ) ) {
 
 						if( currentPos + singleMethod.getName().length() < curLine.length() ) {
 
+							// Next character is a non-word
 							if( Character.toString( curLine.charAt( currentPos + singleMethod.getName().length() ) )
-									.matches( "[\\s]|[\\(]" ) ) {
+									.matches( "[\\W]" ) ) {
 
 								// A method call is found, check to see if it is valid, if so add it
 								if( methodSignatureCheck.isMethodImportedInFile( singleMethod.getFilePath(), source
 										.getPackageAndImports() ) ) {
-									InterestPoint interestingPoint = new InterestPoint( lineNum, _sequence.size(),
-											Constants.SYNCHRONIZE, singleMethod.getName() );
-									_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+																		
+									_interestPointsOnLine.add( new InterestPoint( lineNum, sequenceNumber,
+											Constants.SYNCHRONIZE, singleMethod.getName() ) );
 								}
 							}
 						}
 					}
 
 					pos = currentPos + singleMethod.getName().length();
+					sequenceNumber++;
 				}
 				else {
 					stillMore = false;
@@ -286,14 +293,25 @@ public class FileParser {
 
 		int pos = synchronizedPosition + 1; // The last character position
 		int currentPos = 0; // The current character position
-
+		
 		// Look for the next synchronized keyword
 		if( ( currentPos = curLine.indexOf( Constants.SYNCHRONIZE_BLOCK, pos ) ) != -1 ) {
 
+			// Find the sequence number to use
+			int sequenceNumber = 0;
+			int tempPos = 0;
+			String subLine = curLine.substring( 0, pos+Constants.SYNCHRONIZE_BLOCK.length() );		
+			while( (tempPos = subLine.indexOf( Constants.SYNCHRONIZE_BLOCK, tempPos)) != -1 ){
+				sequenceNumber++;
+				tempPos = subLine.indexOf( Constants.SYNCHRONIZE_BLOCK, tempPos+1);
+				if(tempPos == -1){
+					break;
+				}
+			}
+			
 			// A construct is found, create an interest point (might have to remove it, if a method synchronized
-			InterestPoint interestingPoint = new InterestPoint( currentLineNum, _sequence.size(),
-					Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK );
-			_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+			_interestPointsOnLine.add( new InterestPoint( currentLineNum, sequenceNumber,
+					Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_BLOCK ) );
 		}
 
 		return currentPos;
@@ -356,24 +374,24 @@ public class FileParser {
 		// Synchronize
 		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCK );
 		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_LOCKINTERRUPTIBLY );
+		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_NEWCONDITION );
 		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_TRYLOCK );
 		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_UNLOCK );
-		parseLineForConstructs( curLine, lineNum, Constants.SYNCHRONIZE, Constants.SYNCHRONIZE_NEWCONDITION );
-
-		// Latch
-		parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_COUNTDOWN );
-		parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_AWAIT );
 
 		// Barrier
-		parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_RESET );
 		parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_AWAIT );
+		parseLineForConstructs( curLine, lineNum, Constants.BARRIER, Constants.BARRIER_RESET );
+
+		// Latch
+		parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_AWAIT );
+		parseLineForConstructs( curLine, lineNum, Constants.LATCH, Constants.LATCH_COUNTDOWN );
 
 		// Semaphore
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIREUNINTERRUPTIBLY );
-		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_DRAIN );
 		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_RELEASE );
+		parseLineForConstructs( curLine, lineNum, Constants.SEMAPHORE, Constants.SEMAPHORE_TRYACQUIRE );
 	}
 
 	/**
@@ -394,6 +412,7 @@ public class FileParser {
 		int pos = 0; // The last character position
 		int currentPos = 0; // The current character position
 		boolean stillMore = true; // Flag if there are more relevant syntax
+		int sequenceNumber = 0; // The sequence number of the current constructs on the line
 
 		// Loop for as long as there is relevant syntax
 		while( stillMore ) {
@@ -411,9 +430,9 @@ public class FileParser {
 								.matches( "[\\s]|[\\(]" ) ) {
 
 							// A construct is found, create an interest point
-							InterestPoint interestingPoint = new InterestPoint( lineNumber, _sequence.size(),
-									construct, syntax );
-							_sequence.add( new SequenceOrdering( interestingPoint, currentPos ) );
+							_interestPointsOnLine.add( new InterestPoint( lineNumber, sequenceNumber,
+									construct, syntax ));
+							sequenceNumber++;
 						}
 					}
 				}
@@ -422,89 +441,6 @@ public class FileParser {
 			else {
 				stillMore = false;
 			}
-		}
-	}
-
-	/**
-	 * The sequence of interest points discovered is usually out of order, and thus needs
-	 * re-ordering. This method will correct the sequence's ordering while retaining all the
-	 * additional metadata as found in the {@link SequenceOrdering} class.
-	 *
-	 * @return the ordered arraylist of the sequence ordering
-	 */
-	private ArrayList<SequenceOrdering> correctSequenceOrdering() {
-
-		ArrayList<SequenceOrdering> sortedOrder = new ArrayList<SequenceOrdering>(); // The sorted order
-
-		// If more then one point then sort the points
-		if( _sequence.size() > 0 ) {
-
-			int lowestIndex = 0; // The lowest index of to be added (starts off higher then possible)
-			int index = 0; // The selected index to be added to the sortOrder next
-			int lowestChar = 0; // The lowest character position found
-
-			// Keep looping till all the interest points are accounted for
-			while( _sequence.size() > 0 ) {
-
-				lowestChar = _sequence.get( 0 ).getCharacterPosition();
-				for( SequenceOrdering singleSequence : _sequence ) {
-
-					if( singleSequence.getCharacterPosition() < lowestChar ) {
-						lowestIndex = index;
-					}
-					index++;
-				}
-
-				// Add the next lowest interest point in order of sequence
-				sortedOrder.add( _sequence.get( lowestIndex ) );
-				_sequence.remove( lowestIndex );
-			}
-		}
-		else { // If only one point found then add it
-			sortedOrder.add( _sequence.get( 0 ) );
-		}
-		return sortedOrder;
-	}
-
-	/**
-	 * This inner class is a data class used to hold additional metadata such as the character
-	 * position that the {@link InterestPoint} was found at in the source line.
-	 *
-	 * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
-	 */
-	private class SequenceOrdering {
-
-		private InterestPoint	_interestPoint		= null; // An interest point
-		private int				_characterPosition	= 0;	// The character position on the line
-
-		/**
-		 * Constructor use to instantiate a {@link SequenceOrdering} data class.
-		 *
-		 * @param interestPoint the interest point
-		 * @param characterPosition the character position on the line
-		 * @param constructType the construct type
-		 */
-		public SequenceOrdering( InterestPoint interestPoint, int characterPosition ) {
-			_interestPoint = interestPoint;
-			_characterPosition = characterPosition;
-		}
-
-		/**
-		 * Gets the {@link InterestPoint}.
-		 *
-		 * @return the {@link InterestPoint}
-		 */
-		public InterestPoint getInterestPoint() {
-			return _interestPoint;
-		}
-
-		/**
-		 * Gets the character position.
-		 *
-		 * @return the character position
-		 */
-		public int getCharacterPosition() {
-			return _characterPosition;
 		}
 	}
 
@@ -546,175 +482,66 @@ public class FileParser {
 		return backupExists;
 	}
 
-	public void addAnnotationToFile( SourceFile sf, InterestPoint ip, String str ) throws IOException {
+	public void manipulateAnnotation( SourceFile sourceFile, InstrumentationPoint instrumentationPoint, int deleteUpdateAdd ) throws IOException {
+		
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
+		AnnotationParser annotationParser = new AnnotationParser();
+		
 		try {
-			fileReader = new FileReader( sf.getPath().toFile() );
+			fileReader = new FileReader( sourceFile.getPath().toFile() );
 		}
 		catch( FileNotFoundException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		BufferedReader bufReader = new BufferedReader( fileReader );// Get a buffer reader of this file
+		BufferedReader bufReader = new BufferedReader( fileReader );
+		
 		// If bufferReader is ready start reading the sourceFile
-		try {
-
-			if( bufReader.ready() ) {
-				String buffer = "";
-				int lineNum = 0;
-				String currentLine;
-				// For as long as there are lines left to read; acquire current one
-				while( ( currentLine = bufReader.readLine() ) != null ) {
-					// When it reaches the line with the Interest Point on it
-					if( lineNum == ( ip.getLine() - 1 ) ) {
-						currentLine = str + "\n" + currentLine;
-					}
-					// Add the currentLine to the buffer
-					buffer = buffer + currentLine + "\n";
-
-					// If the buffer's length is over the buffer size then dump it
-					if( buffer.length() > 127 ) {
-						fileContents.append( buffer );
-						buffer = "";
-					}
-					// Increase the line number
-					lineNum++;
-				}
-
-				// Append the rest of the buffer before exiting
-				fileContents.append( buffer );
-			}
-		}
-		catch( IOException e ) {
-			e.printStackTrace();
-		}
-		// Write the fileContent to the new file
-		FileWriter fw = null;
-		try {
-			fw = new FileWriter( sf.getPath().toString() );
-			fw.write( fileContents.toString() );
-		}
-		finally { // Close the writer
-			if( fw != null ) {
-				fw.flush();
-				fw.close();
-			}
-		}
-
-	}
-
-	public void editAnnotation( SourceFile sf, InstrumentationPoint ip ) throws IOException {
-		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
-		FileReader fileReader = null;
-		try {
-			fileReader = new FileReader( sf.getPath().toFile() );
-		}
-		catch( FileNotFoundException e ) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		BufferedReader bufReader = new BufferedReader( fileReader );// Get a buffer reader of this file
-		// If bufferReader is ready start reading the sourceFile
-		try {
-
-			if( bufReader.ready() ) {
-				String buffer = "";
-				int lineNum = 0;
-				String currentLine;
-				// For as long as there are lines left to read; acquire current one
-				while( ( currentLine = bufReader.readLine() ) != null ) {
-					// When it reaches the line with the Interest Point on it
-					if( lineNum == ( ip.getLine() - 2 ) ) {
-						AnnotationParser ap = new AnnotationParser();
-						currentLine = ap.updateAnnotationComment( ip, currentLine );
-					}
-					// Add the currentLine to the buffer
-					buffer = buffer + currentLine + "\n";
-
-					// If the buffer's length is over the buffer size then dump it
-					if( buffer.length() > 127 ) {
-						fileContents.append( buffer );
-						buffer = "";
-					}
-					// Increase the line number
-					lineNum++;
-				}
-
-				// Append the rest of the buffer before exiting
-				fileContents.append( buffer );
-			}
-		}
-		catch( IOException e ) {
-			e.printStackTrace();
-		}
-		// Write the fileContent to the new file
-		FileWriter fw = null;
-		try {
-			fw = new FileWriter( sf.getPath().toString() );
-			fw.write( fileContents.toString() );
-		}
-		finally { // Close the writer
-			if( fw != null ) {
-				fw.flush();
-				fw.close();
-			}
-		}
-
-	}
-
-	public void deleteAnnotation( SourceFile sf, InterestPoint ip ) throws IOException {
-		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
-		FileReader fileReader = null;
-		try {
-			fileReader = new FileReader( sf.getPath().toFile() );
-		}
-		catch( FileNotFoundException e ) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		BufferedReader bufReader = new BufferedReader( fileReader );// Get a buffer reader of this file
-		// If bufferReader is ready start reading the sourceFile
-		try {
-
-			if( bufReader.ready() ) {
-				String buffer = "";
-				int lineNum = 0;
-				String currentLine;
-				// For as long as there are lines left to read; acquire current one
-				while( ( currentLine = bufReader.readLine() ) != null ) {
-					// When it reaches the line with the Interest Point on it
-					if( lineNum == ( ip.getLine() - 2 ) ) {
+		if( bufReader.ready() ) {
+			String buffer = "";
+			int lineNum = 0;
+			String currentLine;
+			// For as long as there are lines left to read; acquire current one
+			while( ( currentLine = bufReader.readLine() ) != null ) {
+				// When it reaches the line with the Interest Point on it
+				if( lineNum == ( instrumentationPoint.getLine() - 2 ) ) {
+					
+					// Delete annotation
+					if (deleteUpdateAdd == 0){
 						currentLine = "";
 					}
-					else
-						currentLine = currentLine + "\n";
-					// Add the currentLine to the buffer
-					buffer = buffer + currentLine;
-
-					// If the buffer's length is over the buffer size then dump it
-					if( buffer.length() > 127 ) {
-						fileContents.append( buffer );
-						buffer = "";
+					else if (deleteUpdateAdd == 1){ // Update
+						currentLine =  annotationParser.updateAnnotationComment( instrumentationPoint, currentLine );
+						buffer = buffer + currentLine + "\n";
 					}
-					// Increase the line number
-					lineNum++;
+					else if (deleteUpdateAdd == 2){ // Add
+						currentLine =  currentLine + "\n" + annotationParser.createAnnotationComment( instrumentationPoint );
+						buffer = buffer + currentLine + "\n";
+					}
+				}
+				else{
+					buffer = buffer + currentLine + "\n";
 				}
 
-				// Append the rest of the buffer before exiting
-				fileContents.append( buffer );
+				// If the buffer's length is over the buffer size then dump it
+				if( buffer.length() > 127 ) {
+					fileContents.append( buffer );
+					buffer = "";
+				}
+				// Increase the line number
+				lineNum++;
 			}
+
+			// Append the rest of the buffer before exiting
+			fileContents.append( buffer );
 		}
-		catch( IOException e ) {
-			e.printStackTrace();
-		}
+
 		// Write the fileContent to the new file
 		FileWriter fw = null;
 		try {
-			fw = new FileWriter( sf.getPath().toString() );
+			fw = new FileWriter( sourceFile.getPath().toString() );
 			fw.write( fileContents.toString() );
 		}
 		finally { // Close the writer
@@ -723,5 +550,6 @@ public class FileParser {
 				fw.close();
 			}
 		}
+
 	}
 }

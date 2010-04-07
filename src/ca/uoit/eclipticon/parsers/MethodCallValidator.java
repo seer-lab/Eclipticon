@@ -36,10 +36,8 @@ public class MethodCallValidator {
 	public boolean isMethodImportedInFile( Path pathFileClass, String importsAndPackage ) {
 
 		// Take the path of the method class and format the path
-		String filePath = pathFileClass.toString();
+		String filePath = pathFileClass.removeFileExtension().toString();
 		System.out.println( "path: " + filePath );
-		if( filePath.indexOf( ".java" ) != -1 ) // Remove the file extension
-			filePath = filePath.substring( 0, filePath.indexOf( ".java" ) );
 		filePath = filePath.replace( '\\', '.' ); // Replace the windows separators with dots
 		filePath = filePath.replace( '/', '.' ); // Replace the unix separators with dots
 
@@ -59,10 +57,6 @@ public class MethodCallValidator {
 
 		// Remove the workspace path from path of the method class
 		filePath = filePath.substring( workspace.length() );
-//		if( filePath.indexOf( '.' ) == 0 ) // If there is a dot at the beginning get rid of it
-//			filePath = filePath.substring( 1 );
-//		if( workspace.indexOf( '.' ) == 0 ) // If there is a dot at the beginning get rid of it
-//			workspace = workspace.substring( 1 );
 
 		// If the imports and package string is null then set it an empty string
 		if( importsAndPackage == null ) {

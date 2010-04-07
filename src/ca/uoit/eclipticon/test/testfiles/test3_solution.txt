@@ -1,4 +1,4 @@
-package ca.uoit.eclipticon.test.instrumentor_tests;
+package ca.uoit.eclipticon.test.testfiles;
 
 import java.util.concurrent.*;import java.util.Random;
 

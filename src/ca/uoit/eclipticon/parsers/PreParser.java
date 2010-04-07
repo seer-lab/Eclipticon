@@ -72,7 +72,7 @@ public class PreParser {
 			}
 
 			// Stuff the headers
-			String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z][a-z0-9_])*[(\\s)+](.*?)(\\{)";
+			String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z]+[a-z0-9_])*[(\\s)+](.*?)(\\{)";
 			Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
 					| Pattern.MULTILINE );
 

@@ -1,13 +1,12 @@
-package ca.uoit.eclipticon.test.instrumentor_tests;
+package ca.uoit.eclipticon.test.testfiles;
 
 import java.util.concurrent.*;
 
 import ca.uoit.eclipticon.instrumentation.*;
 
-public class test2 extends Object {
+public class test3 extends Object {
 
 	public void testing() throws InterruptedException, BrokenBarrierException {
-		new CyclicBarrier( 0 ).await();
-		new CountDownLatch( 2 ).countDown();
+		new CyclicBarrier( 0 ).await();		new CountDownLatch( 2 ).countDown();
 	}
 }

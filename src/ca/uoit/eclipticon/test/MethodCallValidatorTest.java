@@ -31,7 +31,6 @@ public class MethodCallValidatorTest extends TestCase {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		// new Activator();
 	}
 
 	@AfterClass

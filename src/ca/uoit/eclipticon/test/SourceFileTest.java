@@ -3,7 +3,6 @@ package ca.uoit.eclipticon.test;
 import junit.framework.TestCase;
 
 import org.eclipse.core.runtime.Path;
-import org.eclipse.swt.internal.gtk.OS;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
