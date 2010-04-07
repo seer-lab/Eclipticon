@@ -4,13 +4,17 @@ import java.util.concurrent.*;
 
 import ca.uoit.eclipticon.instrumentation.*;
 
-public class test5 extends Object {
+public class test6 extends Object {
 
 	public void testing() throws InterruptedException, BrokenBarrierException {
-		int a = 0; String s = Integer.toString(new test5().methodCall());
+		int a = 0; String s = Integer.toString(new test6().methodCall());
 	}
 	
 	synchronized public int methodCall() {
+		return 1;
+	}
+	
+	synchronized public int methodCall2() {
 		return 1;
 	}
 }

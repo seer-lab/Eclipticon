@@ -26,6 +26,19 @@ public class PreParser {
 	static private ArrayList<SynchronizedMethods> _synchronizedMethods = new ArrayList<SynchronizedMethods>();
 
 	/**
+	 * Constructor.
+	 */
+	public PreParser(){
+	}
+	
+	/**
+	 * Clears the synchronizedMethods data array.
+	 */
+	private void clearSychronizedMethods(){
+		_synchronizedMethods.clear();
+	}
+	
+	/**
 	 * This method will take the source files and end up finding and storing all the 
 	 * synchronized method for future use during the pre-parse phase.
 	 * 
@@ -34,6 +47,8 @@ public class PreParser {
 	 */
 	public void findSynchronizedMethods( ArrayList<SourceFile> sources ) {
 
+		clearSychronizedMethods();
+		
 		String contents = "";
 		Matcher matcher = null;
 

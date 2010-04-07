@@ -242,6 +242,7 @@ public class FileParser {
 
 			stillMore = true;
 			int sequenceNumber = 0; // Sequence number of the current method call
+			pos = 0;
 
 			// Loop for as long as there is relevant syntax
 			while( stillMore ) {
