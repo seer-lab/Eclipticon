@@ -1,7 +1,6 @@
 package ca.uoit.eclipticon.test;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import junit.framework.TestCase;

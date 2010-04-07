@@ -2,8 +2,6 @@ package ca.uoit.eclipticon.test;
 
 import junit.framework.TestCase;
 
-import org.eclipse.core.resources.IWorkspaceRoot;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -11,18 +9,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import ca.uoit.eclipticon.gui.Activator;
 import ca.uoit.eclipticon.parsers.MethodCallValidator;
 
 public class MethodCallValidatorTest extends TestCase {
 
 	private MethodCallValidator	_methodValidator		= null;
-	private Path				_windowsMethodPath		= new Path(
-																"\\eclipticon\\src\\ca\\uoit\\eclipticon\\test\\InstrumentationPointTest.java" );
-	private Path				_unixMethodPath			= new Path(
-																"/eclipticon/src/ca/uoit/eclipticon/test/InstrumentationPointTest.java" );
-	private Path				_windowsMissMethodPath	= new Path(
-																"\\eclipticon\\src\\ca\\uoit\\eclipticon\\Constants.java" );
+	private Path				_windowsMethodPath		= new Path( "\\eclipticon\\src\\ca\\uoit\\eclipticon\\test\\InstrumentationPointTest.java" );
+	private Path				_unixMethodPath			= new Path( "/eclipticon/src/ca/uoit/eclipticon/test/InstrumentationPointTest.java" );
+	private Path				_windowsMissMethodPath	= new Path( "\\eclipticon\\src\\ca\\uoit\\eclipticon\\Constants.java" );
 	private Path				_unixMissMethodPath		= new Path( "/eclipticon/src/ca/uoit/eclipticon/Constants.java" );
 	private String				_import					= "import ca.uoit.eclipticon.instrumentation;\nimport ca.uoit.eclipticon.test;";
 	private String				_badFormattedImport		= "import   ca . uoit  .eclipticon.instrumentation   ;import ca.uoit .   eclipticon.test;";

@@ -111,9 +111,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 		try {
 			// Read in their XML's
-			//_ach.readXml();
-
 			_ach.readXml();
+			
 			// Populate the table and the Auto Tab
 			populateAutoTab( _ach.getConfiguration() );
 
@@ -121,10 +120,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 		}
 		catch( FileNotFoundException e ) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		catch( IOException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -236,7 +231,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		Label lowerLbl = new Label( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.VERTICAL_ALIGN_BEGINNING );
 		lowerLbl.setLayoutData( gridData );
-		lowerLbl.setText( "Lower Bound:" );
+		lowerLbl.setText( "Lower Bound (ms):" );
 
 		_txtLower = new Text( groupProperties, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
@@ -246,7 +241,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		Label higherLbl = new Label( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.VERTICAL_ALIGN_BEGINNING );
 		higherLbl.setLayoutData( gridData );
-		higherLbl.setText( "Higher Bound:" );
+		higherLbl.setText( "Higher Bound (ms):" );
 
 		_txtHigher = new Text( groupProperties, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
@@ -256,7 +251,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		Label probLbl = new Label( groupProperties, SWT.NULL );
 		gridData = new GridData( GridData.VERTICAL_ALIGN_BEGINNING );
 		probLbl.setLayoutData( gridData );
-		probLbl.setText( "Probability of Delay (%):" );
+		probLbl.setText( "Probability of Delay Activating (%):" );
 
 		_txtProb = new Text( groupProperties, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
@@ -276,7 +271,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_manualButton.addSelectionListener( this );
 
 		tabManual.setControl( composite );
-
 	}
 
 	/**
@@ -353,7 +347,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		Label rangeLbl = new Label( range, SWT.NULL );
 		gridData = new GridData();
 		rangeLbl.setLayoutData( gridData );
-		rangeLbl.setText( "Delay Range(ms):" );
+		rangeLbl.setText( "Delay Range (ms):" );
 
 		_txtAutoLower = new Text( range, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL );
@@ -504,7 +498,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			_autoButton.setText( "Instrument Files" );
 		_autoButton.addSelectionListener( this );
 		tabAuto.setControl( composite );
-
 	}
 
 	/**
@@ -562,9 +555,9 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						subItem.setChecked( true );
 						item.setChecked( true );
 						InstrumentationPoint tempIP = (InstrumentationPoint)ip;
-						if( tempIP.getType() == Constants.SLEEP )
+						if( tempIP.getType() == Constants.NOISE_SLEEP )
 							subItem.setText( 2, "Sleep" );
-						else if( tempIP.getType() == Constants.YIELD )
+						else if( tempIP.getType() == Constants.NOISE_YIELD )
 							subItem.setText( 2, "Yield" );
 						someChecked = true;
 					}
@@ -574,11 +567,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						}
 					}
 				}
-
 			}
-
 		}
-
 	}
 
 	/**
@@ -588,10 +578,9 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 */
 	public void fillInfoLabels( InstrumentationPoint instrPoint ) {
 		// Sets the the Combo box
-		// TODO: CONSTANTS
-		if( instrPoint.getType() == 0 )
+		if( instrPoint.getType() == Constants.NOISE_SLEEP )
 			_cmbType.select( _cmbType.indexOf( "Sleep" ) );
-		else if( instrPoint.getType() == 1 )
+		else if( instrPoint.getType() == Constants.NOISE_YIELD )
 			_cmbType.select( _cmbType.indexOf( "Yield" ) );
 		_txtLower.setText( String.valueOf( instrPoint.getLow() ) );
 		_txtHigher.setText( String.valueOf( instrPoint.getHigh() ) );
@@ -600,7 +589,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtLower.setEnabled( true );
 		_txtHigher.setEnabled( true );
 		_txtProb.setEnabled( true );
-
 	}
 
 	public void disableInfoLabels() {
@@ -614,13 +602,10 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtProb.setEnabled( false );
 	}
 
-
-
 	/**
 	 * Clears the table and repopulates from the model
 	 */
 	public void refreshTable() {
-
 	}
 
 	@Override
@@ -630,29 +615,24 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public Object getInput() {
-
 		return null;
 	}
 
 	@Override
 	public ISelection getSelection() {
-
 		return null;
 	}
 
 	@Override
 	public void refresh() {
-
 	}
 
 	@Override
 	public void setInput( Object arg0 ) {
-
 	}
 
 	@Override
 	public void setSelection( ISelection arg0, boolean arg1 ) {
-
 	}
 	
 	public void refreshTreeItem(TreeItem parent){
@@ -674,15 +654,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			if( ipCurrent instanceof InstrumentationPoint ) {
 				
 				InstrumentationPoint tempIP = (InstrumentationPoint)ipCurrent;
-				if( tempIP.getType() == Constants.SLEEP )
+				if( tempIP.getType() == Constants.NOISE_SLEEP )
 					i.setText( 2, "Sleep" );
-				else if( tempIP.getType() == Constants.YIELD )
+				else if( tempIP.getType() == Constants.NOISE_YIELD )
 					i.setText( 2, "Yield" );
 			}
 			
-			
-			// If it comes to a sibling that isn't selected the
-			// root is grayed
+			// If it comes to a sibling that isn't selected the root is grayed
 			if( !i.getChecked() ) {
 				parent.setGrayed( true );
 				break;
@@ -706,7 +684,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			else if( data instanceof InterestPoint ) {
 				InterestPoint iPSelected = (InterestPoint)data;
 			}
-
 		}
 	}
 
@@ -762,23 +739,18 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 					if( selectedItem.getChecked() ) {
 						refreshTreeItem( parent );
 						
-						//Create annotation
+						// Create annotation
 						InterestPoint ip = (InterestPoint)selectedItem.getData();
-						InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.YIELD, 100, 0, 1000);
-						AnnotationParser aP = new AnnotationParser();
+						InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.NOISE_YIELD, 100, 0, 1000);
 						SourceFile sf = (SourceFile) parent.getData();
 						try {
-							_newFP.manipulateAnnotation( sf, instr, 2 ); // Add annotation
+							_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD);
 						}
 						catch( IOException e ) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
-						}
-						
-						
+						}		
 						refreshTreeItem( parent );
-						
-						
 					}
 
 					// It was unchecked
@@ -789,7 +761,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						InstrumentationPoint ip = (InstrumentationPoint)selectedItem.getData();
 						SourceFile sf = (SourceFile) parent.getData();
 						try {
-							_newFP.manipulateAnnotation( sf, ip, 0); // Delete annotation
+							_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE);
 						}
 						catch( IOException e ) {
 							// TODO Auto-generated catch block
@@ -825,7 +797,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						disableInfoLabels();
 				}
 			}
-
 		}
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
@@ -844,9 +815,9 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 					}
 				}
 			}
+			
 			// Instrument the files
 			else {
-				
 				// Manual Instrumentation
 				if( arg0.widget == _manualButton ) {
 					for( SourceFile sf : sources ) {
@@ -876,18 +847,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 										if( sf.getInterestingPoints().size() > 0 )
 											i.instrument( sf, true );
 									}
-									
 								}
 							}
 						}
 					}
 				}
-
-			}
-			
+			}		
 			//Make sure the buttons are correctly labeled.
 			checkButtons();
-
 		}
 
 		// The Widget selected was a Combo box
@@ -899,34 +866,32 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 			// If the selection differs from the model, raise a flag
 			if( _cmbType.getText().compareTo( "Sleep" ) == 0 ) {
-				if( point.getType() != 0 ) {
-					point.setType( 0 );
+				if( point.getType() != Constants.NOISE_SLEEP ) {
+					point.setType( Constants.NOISE_SLEEP );
 					_modified = true;
 				}
 			}
 			else if( _cmbType.getText().compareTo( "Yield" ) == 0 ){
-				if( point.getType() != 1 ) {
-					point.setType( 1 );
+				if( point.getType() != Constants.NOISE_YIELD ) {
+					point.setType( Constants.NOISE_YIELD );
 					_modified = true;
 				}
 			}
 			
-			// If the modified flag is raised, the current tableitem has been changed
-			// so write out to xml
+			// If the modified flag is raised, the current tableitem has been changed so write out to xml
 			if( _modified ) {
 				_modified = false;
 				
 				SourceFile sf = (SourceFile) item[0].getParentItem().getData();
 				refreshTreeItem( item[0].getParentItem() );
 				try {
-					_newFP.manipulateAnnotation( sf, point, 1 ); // Update annotation
+					_newFP.manipulateAnnotation( sf, point, Constants.ANNOTATION_UPDATE );
 				}
 				catch( IOException e ) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				refreshTreeItem( item[0].getParentItem() );	
-				
 			}
 		}
 		else if( arg0.widget == _sleepYield ) {
@@ -985,7 +950,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			}
 			_modified = false;
 		}
-
 	}
 
 	@Override
@@ -995,17 +959,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	public void modifyText( ModifyEvent e ) {
 		// TODO Auto-generated method stub
 		_modified = true;
-
 	}
 
 	@Override
 	public void focusGained( FocusEvent e ) {
-
 	}
 
 	@Override
 	public void focusLost( FocusEvent e ) {
-		
 		
 		// Flag Variable
 		int temp = 0;
@@ -1045,20 +1006,16 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				else{
 					refreshTreeItem( selectedItem[0].getParentItem() );
 					SourceFile sf = (SourceFile) selectedItem[0].getParentItem().getData();
-					_newFP.manipulateAnnotation( sf, pointChanging, 1 ); // Update annotation
+					_newFP.manipulateAnnotation( sf, pointChanging, Constants.ANNOTATION_UPDATE );
 					refreshTreeItem( selectedItem[0].getParentItem() );
-				}
-					
+				}			
 			}
 			catch( IOException e1 ) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-
 			_modified = false;
-
 		}
-
 	}
 
 	/**
@@ -1070,7 +1027,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		if( _newFP.checkIfBackupExists( _workspacePath ) ) {
 			_autoButton.setText( "Revert Files" );
 			_manualButton.setText( "Revert Files" );
-
 		}
 		else {
 			_autoButton.setText( "Instrument Files" );
@@ -1081,5 +1037,4 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_autoButton.pack();
 		_autoButton.redraw();
 	}
-
 }

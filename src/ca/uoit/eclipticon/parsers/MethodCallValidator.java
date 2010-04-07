@@ -1,12 +1,13 @@
 package ca.uoit.eclipticon.parsers;
 
-import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Path;
+
+import ca.uoit.eclipticon.Constants;
 
 /**
  * The Class MethodCallValidator will end up verifying that a file's path end up
@@ -18,11 +19,7 @@ import org.eclipse.core.runtime.Path;
  */
 public class MethodCallValidator {
 	
-	// Regex's to match on the package statements
-	private String _packageRegex = "([package]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\*]*[\\s]*;)";
-	private Pattern _packagePattern = Pattern.compile( _packageRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-	private String _importRegex = "([import]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\s]*;)";
-	private Pattern _importPattern = Pattern.compile( _importRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+	// Matcher to match on the package statements
 	private Matcher _matcher = null;
 	
 	/**
@@ -37,7 +34,6 @@ public class MethodCallValidator {
 
 		// Take the path of the method class and format the path
 		String filePath = pathFileClass.removeFileExtension().toString();
-		System.out.println( "path: " + filePath );
 		filePath = filePath.replace( '\\', '.' ); // Replace the windows separators with dots
 		filePath = filePath.replace( '/', '.' ); // Replace the unix separators with dots
 
@@ -48,7 +44,7 @@ public class MethodCallValidator {
 			workspacePath = (Path)root.getLocation();
 		}
 		catch( Exception e ) {
-			workspacePath = new Path("");
+			workspacePath = new Path(""); // No workspace if cannot find one
 		}
 
 		String workspace = workspacePath.toString();
@@ -69,7 +65,7 @@ public class MethodCallValidator {
 		_matcher = null;
 
 		// Match on the package statement
-		_matcher = _packagePattern.matcher( importsAndPackage );
+		_matcher = Constants.PATTERN_PACKAGE.matcher( importsAndPackage );
 		if( _matcher.find() ) {
 			
 			// Acquire the package statement
@@ -79,13 +75,12 @@ public class MethodCallValidator {
 			packageStatement = packageStatement.replaceAll( "[\\s]*" , "" );
 
 			if (filePath.indexOf( packageStatement ) != -1){
-				System.out.println( "Found a package that matches." );
 				return true;
 			}
 		}
 
 		// Match on the import statement
-		_matcher = _importPattern.matcher( importsAndPackage );
+		_matcher = Constants.PATTERN_IMPORT.matcher( importsAndPackage );
 		while( true ) {
 			if( _matcher.find() ) {
 
@@ -96,7 +91,6 @@ public class MethodCallValidator {
 				importStatement = importStatement.replaceAll( "[\\s]*" , "" );
 
 				if (filePath.indexOf( importStatement ) != -1){
-					System.out.println( "Found an import that matches." );
 					return true;
 				}
 			}

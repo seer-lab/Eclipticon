@@ -63,7 +63,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
-				Constants.SLEEP, 1, 11, 111 ) );
+				Constants.NOISE_SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -99,9 +99,9 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
-				Constants.SLEEP, 1, 11, 111 ) );
+				Constants.NOISE_SLEEP, 1, 11, 111 ) );
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 11, 0, Constants.LATCH, Constants.LATCH_COUNTDOWN,
-				Constants.SLEEP, 2, 22, 222 ) );
+				Constants.NOISE_SLEEP, 2, 22, 222 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -137,9 +137,9 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.BARRIER, Constants.BARRIER_AWAIT,
-				Constants.SLEEP, 1, 11, 111 ) );
+				Constants.NOISE_SLEEP, 1, 11, 111 ) );
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.LATCH, Constants.LATCH_COUNTDOWN,
-				Constants.SLEEP, 2, 22, 222 ) );
+				Constants.NOISE_SLEEP, 2, 22, 222 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -175,7 +175,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
-				Constants.SLEEP, 1, 11, 111 ) );
+				Constants.NOISE_SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -211,7 +211,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
-				Constants.SLEEP, 1, 11, 111 ) );
+				Constants.NOISE_SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -247,7 +247,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE, "methodCall",
-				Constants.SLEEP, 1, 11, 111 ) );
+				Constants.NOISE_SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -283,7 +283,7 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE,
-				Constants.SYNCHRONIZE_BLOCK, Constants.SLEEP, 1, 11, 111 ) );
+				Constants.SYNCHRONIZE_BLOCK, Constants.NOISE_SLEEP, 1, 11, 111 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );
@@ -319,9 +319,9 @@ public class InstrumentorTest extends TestCase {
 
 		// Add the instrumentation points
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 0, Constants.SYNCHRONIZE,
-				Constants.SYNCHRONIZE_BLOCK, Constants.SLEEP, 1, 11, 111 ) );
+				Constants.SYNCHRONIZE_BLOCK, Constants.NOISE_SLEEP, 1, 11, 111 ) );
 		_sourceFile.addInterestingPoint( new InstrumentationPoint( 10, 1, Constants.SYNCHRONIZE,
-				Constants.SYNCHRONIZE_BLOCK, Constants.SLEEP, 2, 22, 222 ) );
+				Constants.SYNCHRONIZE_BLOCK, Constants.NOISE_SLEEP, 2, 22, 222 ) );
 
 		// Manual Instrument the source file
 		_instrumentor.instrument( _sourceFile, false );

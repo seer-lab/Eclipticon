@@ -1,6 +1,8 @@
 package ca.uoit.eclipticon.parsers;
+
 import java.util.regex.*;
 
+import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.InstrumentationPoint;
 import ca.uoit.eclipticon.instrumentation.PreemptionPoint;
 
@@ -15,7 +17,7 @@ public class AnnotationParser {
 	
 	// default values
 	private int _sequence = 0;
-	private int _type = 0; // 0 is sleep
+	private int _type = Constants.NOISE_SLEEP;
 	private int _low = 100;
 	private int _high = 1000;
 	private int _probability = 100;
@@ -58,7 +60,7 @@ public class AnnotationParser {
 
 				_type = parseType( params );
 				// branch here, because sleep and yield require different syntax
-				if( _type == 1 ) { // if type is yield
+				if( _type == Constants.NOISE_YIELD ) { // if type is yield
 
 					_probability = parseProbability( params );
 					_low = 0;
@@ -186,7 +188,6 @@ public class AnnotationParser {
         return probability;
 	}
 	
-	
 	/**
 	 * The createAnnotationComment method creates a syntactically correct comment from an Instrumentation Point.
 	 * 
@@ -201,7 +202,7 @@ public class AnnotationParser {
 		
 		annotationComment = annotationComment + "sequence = " + point.getSequence() + ", ";
 		
-		if(point.getType() == 0) { // then write sleep
+		if(point.getType() == Constants.NOISE_SLEEP) { // then write sleep
 			
 			annotationComment = annotationComment + "type = \"sleep\", "
 				+ "low = " + point.getLow() + ", high = " + point.getHigh() + ", "
@@ -211,9 +212,7 @@ public class AnnotationParser {
 			
 			annotationComment = annotationComment + "type = \"yield\", "
 				+ "probability = " + point.getProbability() + ") */";
-			
 		}
-		
 		return annotationComment;
 	}
 	
@@ -268,7 +267,7 @@ public class AnnotationParser {
 		updatedAnnotationComment = "/* @PreemptionPoint ("; // TODO should really have this as an ivar string like Constants.SYNTAX
 		updatedAnnotationComment = updatedAnnotationComment + "sequence = " + point.getSequence() + ", ";
 		
-		if(point.getType() == 0) { // then write sleep
+		if(point.getType() == Constants.NOISE_SLEEP) { // then write sleep
 			
 			updatedAnnotationComment = updatedAnnotationComment + "type = \"sleep\", "
 				+ "low = " + point.getLow() + ", high = " + point.getHigh() + ", "
@@ -283,10 +282,4 @@ public class AnnotationParser {
 		String newLine = beginningOfLine + " " + updatedAnnotationComment + " " + restOfLine;
 		return newLine;		
 	}
-	
-	
-	
-	
-	
-	
 }

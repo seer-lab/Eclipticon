@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.instrumentation.NoiseMaker;
 
 public class NoiseMakerTest extends TestCase {
@@ -47,6 +48,6 @@ public class NoiseMakerTest extends TestCase {
 	
 	@Test
 	public void testMakeNoiseYield() {
-		assertEquals( "if((_____rand0123456789_____.nextInt(100-0)+0)<=50)try{Thread.yield();}catch(Exception e){};", noiseMakers.makeNoise( 50, 1, 0, 0 ) );
+		assertEquals( "if((_____rand0123456789_____.nextInt(100-0)+0)<=50)try{Thread.yield();}catch(Exception e){};", noiseMakers.makeNoise( 50, Constants.NOISE_YIELD, 0, 0 ) );
 	}
 }

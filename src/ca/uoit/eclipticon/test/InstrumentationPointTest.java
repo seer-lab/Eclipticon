@@ -8,53 +8,50 @@ import ca.uoit.eclipticon.Constants;
 
 public class InstrumentationPointTest extends TestCase {
 	
-	private InstrumentationPoint actual;
+	private InstrumentationPoint _actual;
 	
-	int line = 20;
-	int instance = 0;
-	String construct = Constants.SEMAPHORE;
-	String constructSyntax = Constants.SEMAPHORE_ACQUIRE;
-	int type = 0;
-	int prob = 80;
-	int low = 1;
-	int high = 500;
+	private int _line = 20;
+	private int _instance = 0;
+	private String _construct = Constants.SEMAPHORE;
+	private String _constructSyntax = Constants.SEMAPHORE_ACQUIRE;
+	private int _type = Constants.NOISE_SLEEP;
+	private int _prob = 80;
+	private int _low = 1;
+	private int _high = 500;
 	
 	@Before public void setUp() {
-		
-		actual = new InstrumentationPoint(line, instance, construct, constructSyntax, type, prob, low, high);
-		//InstrumentationPoint( int line, int instance, String construct, int type, int prob, int low, int high )
+		_actual = new InstrumentationPoint(_line, _instance, _construct, _constructSyntax, _type, _prob, _low, _high);
 	}
 	
 	@Test public void testGetLine() {
-		assertEquals(line, actual.getLine());
+		assertEquals(_line, _actual.getLine());
 	}
 	
 	@Test public void testGetSequence() {
-		assertEquals(instance, actual.getSequence());
+		assertEquals(_instance, _actual.getSequence());
 	}
 
 	@Test public void testGetConstruct() {
-		assertEquals(construct, actual.getConstruct());
+		assertEquals(_construct, _actual.getConstruct());
 	}
 	
 	@Test public void testGetConstructSyntax() {
-		assertEquals(constructSyntax, actual.getConstructSyntax());
+		assertEquals(_constructSyntax, _actual.getConstructSyntax());
 	}
 	
 	@Test public void testGetType() {
-		assertEquals(type, actual.getType());
+		assertEquals(_type, _actual.getType());
 	}
 	
 	@Test public void testGetProbability() {
-		assertEquals(prob, actual.getProbability());
+		assertEquals(_prob, _actual.getProbability());
 	}
 	
 	@Test public void testGetLow() {
-		assertEquals(low, actual.getLow());
+		assertEquals(_low, _actual.getLow());
 	}
 	
 	@Test public void testGetHigh() {
-		assertEquals(high, actual.getHigh());
+		assertEquals(_high, _actual.getHigh());
 	}
-	
 }

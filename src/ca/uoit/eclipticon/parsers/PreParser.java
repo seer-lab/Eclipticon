@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.Path;
 
+import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.SourceFile;
 
 /**
@@ -34,10 +35,6 @@ public class PreParser {
 	public void findSynchronizedMethods( ArrayList<SourceFile> sources ) {
 
 		String contents = "";
-		String methodRegex = "synchronized" + "[\\s]+?" + "[public|private|protector]+[\\s]*?" + "[\\w]+?" + "[\\s]+?"
-				+ "(\\w+)\\(";
-		Pattern methodPattern = Pattern.compile( methodRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-				| Pattern.MULTILINE );
 		Matcher matcher = null;
 
 		// For each source file
@@ -65,18 +62,14 @@ public class PreParser {
 			}
 
 			// Find the sync methods
-			matcher = methodPattern.matcher( contents );
+			matcher = Constants.PATTERN_METHOD.matcher( contents );
 			while (matcher.find()){
 				SynchronizedMethods synchMethod = new SynchronizedMethods( matcher.group( 1 ), source.getPath() );
 				_synchronizedMethods.add( synchMethod );
 			}
 
 			// Stuff the headers
-			String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z]+[a-z0-9_])*[(\\s)+](.*?)(\\{)";
-			Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-					| Pattern.MULTILINE );
-
-			matcher = classPattern.matcher( contents );
+			matcher = Constants.PATTERN_CLASS.matcher( contents );
 
 			// If a match is found store the package and import statements
 			if( matcher.find() ) {

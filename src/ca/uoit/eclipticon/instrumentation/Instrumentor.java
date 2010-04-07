@@ -29,7 +29,6 @@ import ca.uoit.eclipticon.data.SourceFile;
  */
 public class Instrumentor {
 
-	private final int	BUFFER_SIZE	= 127;				// A common buffer size for character I/O
 	private NoiseMaker	_noiseMaker	= new NoiseMaker(); // The object to generate noise
 
 	/**
@@ -40,7 +39,7 @@ public class Instrumentor {
 	 */
 	private void makeBackupFile( File sourceFile ) throws IOException {
 
-		File copyFile = new File( sourceFile.getPath() + ".eclipticon" );
+		File copyFile = new File( sourceFile.getPath() + Constants.EXTENSION_ECLIPTICON );
 
 		// Create the file if it doesn't exist
 		if( !copyFile.exists() ) {
@@ -69,7 +68,7 @@ public class Instrumentor {
 
 	/**
 	 * Prints the file content to the same file path with the modification of
-	 * .instr append to the original file.
+	 * .eclipticon append to the original file.
 	 * 
 	 * @param instrumentedCode the file's content
 	 * @param filePath the file's path
@@ -104,7 +103,7 @@ public class Instrumentor {
 	public void revertToOriginalState( SourceFile sourceFile ) throws IOException {
 
 		// This is the path to the backup file and original file
-		File backupFile = new File( sourceFile.getPath() + ".eclipticon" );
+		File backupFile = new File( sourceFile.getPath() + Constants.EXTENSION_ECLIPTICON );
 		File originalFile = sourceFile.getPath().toFile();
 
 		// Only revert if the backup file exists
@@ -207,7 +206,7 @@ public class Instrumentor {
 					buffer = buffer + currentLine + "\n";
 
 					// If the buffer's length is over the buffer size then dump it
-					if( buffer.length() > this.BUFFER_SIZE ) {
+					if( buffer.length() > Constants.BUFFER_SIZE ) {
 						fileContents.append( buffer );
 						buffer = "";
 					}
@@ -259,7 +258,6 @@ public class Instrumentor {
 			configurationHandler.readXml();
 		}
 		catch( FileNotFoundException e ) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -283,10 +281,10 @@ public class Instrumentor {
 			// Figure out the type of noise to use
 			int type = 0;
 			if( rand.nextInt( 100 ) <= sleepProbability ) {
-				type = Constants.SLEEP;
+				type = Constants.NOISE_SLEEP;
 			}
 			else {
-				type = Constants.YIELD;
+				type = Constants.NOISE_YIELD;
 			}
 
 			// Figure out the probability of instrumenting given the type of the construct
@@ -310,9 +308,7 @@ public class Instrumentor {
 			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(),
 					interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange,
 					highDelayRange ) );
-
 		}
-
 		return instrPoints;
 	}
 
@@ -325,19 +321,14 @@ public class Instrumentor {
 	 */
 	private String addRandImportAndVariable( String instrumentedCode ) {
 
-		// Regex's to match on the import and class statements to allow for the injection of the random variable
-		String importRegex =  "([import]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\*]*[\\s]*;)";
-		String classRegex = "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z]+[a-z0-9_])*[(\\s)+](.*?)(\\{)";
-		Pattern importPattern = Pattern.compile( importRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-		Pattern classPattern = Pattern.compile( classRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL
-				| Pattern.MULTILINE );
+		// Matcher to match on the import and class statements to allow for the injection of the random variable
 		Matcher matcher = null;
 		String finalInstrumentedCode = "";
 		int importEndPos = 0;
 		int classEndPos = 0;
 
 		// Match on the import statement
-		matcher = importPattern.matcher( instrumentedCode );
+		matcher = Constants.PATTERN_IMPORT.matcher( instrumentedCode );
 		if( matcher.find() ) {
 
 			// Append from the start till the end of the matched import and add the import statement
@@ -347,12 +338,8 @@ public class Instrumentor {
 		}
 		else { // Try to match on package
 
-			// Compile the package regular expression
-			String packageRegex = "([package]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\s]*;)";
-			Pattern packagePattern = Pattern.compile( packageRegex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-
 			// Set matcher to find package
-			matcher = packagePattern.matcher( instrumentedCode );
+			matcher = Constants.PATTERN_PACKAGE.matcher( instrumentedCode );
 
 			if( matcher.find() ) {
 
@@ -369,10 +356,10 @@ public class Instrumentor {
 		}
 
 		// Match on the class statement
-		matcher = classPattern.matcher( instrumentedCode );
+		matcher = Constants.PATTERN_CLASS.matcher( instrumentedCode );
 		if( matcher.find() ) {
+			
 			// Take the ending position of the match
-
 			classEndPos = matcher.end();
 
 			// Append from the ending of the import match till the end of the class match, and add the random variable
@@ -381,7 +368,7 @@ public class Instrumentor {
 					+ _noiseMaker.makeRandVariable() );
 		}
 		else { // Class was not found
-			finalInstrumentedCode = finalInstrumentedCode.concat( "\n/* NO CLASS WAS FOUND - ECLIPTICON */" );
+			finalInstrumentedCode = finalInstrumentedCode.concat( "/* NO CLASS WAS FOUND - ECLIPTICON */" );
 		}
 
 		// Fill in the rest of the instrumented code

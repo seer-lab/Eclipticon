@@ -8,63 +8,60 @@ import ca.uoit.eclipticon.Constants;
 
 public class InterestPointTest extends TestCase {
 
-	private InterestPoint actual;
-	
-	int line = 20;
-	int instance = 0;
-	String construct = Constants.SEMAPHORE;
-	String constructSyntax = Constants.SEMAPHORE_ACQUIRE;
+	private InterestPoint _actual;
+	private int _line = 20;
+	private int _sequence = 0;
+	private String _construct = Constants.SEMAPHORE;
+	private String _constructSyntax = Constants.SEMAPHORE_ACQUIRE;
 	
 	@Before
 	public void setUp() throws Exception {
-		actual = new InterestPoint(line, instance, construct, constructSyntax);
-		/// public InterestPoint( int line, int sequence, String construct, String constructSyntax ) {
+		_actual = new InterestPoint(_line, _sequence, _construct, _constructSyntax);
 	}
 
 	@Test
 	public void testGetLine() {
-		assertEquals(line, actual.getLine());
+		assertEquals(_line, _actual.getLine());
 	}
 
 	@Test
 	public void testSetLine() {
-		actual.setLine(505);
-		int testLine = actual.getLine();
+		_actual.setLine(505);
+		int testLine = _actual.getLine();
 		assertEquals(505, testLine);
 	}
 
 	@Test
 	public void testGetSequence() {
-		assertEquals(instance, actual.getSequence());
+		assertEquals(_sequence, _actual.getSequence());
 	}
 
 	@Test
 	public void testSetSequence() {
-		actual.setSequence(4);
-		int testSequence = actual.getSequence();
+		_actual.setSequence(4);
+		int testSequence = _actual.getSequence();
 		assertEquals(4, testSequence);
 	}
 
 	@Test
 	public void testGetConstruct() {
-		assertEquals(construct, Constants.SEMAPHORE);
+		assertEquals(_construct, Constants.SEMAPHORE);
 	}
 
 	@Test
 	public void testSetConstruct() {
-		actual.setConstruct(Constants.BARRIER);
-		assertEquals(Constants.BARRIER, actual.getConstruct());
+		_actual.setConstruct(Constants.BARRIER);
+		assertEquals(Constants.BARRIER, _actual.getConstruct());
 	}
 
 	@Test
 	public void testGetConstructSyntax() {
-		assertEquals(constructSyntax, Constants.SEMAPHORE_ACQUIRE);
+		assertEquals(_constructSyntax, Constants.SEMAPHORE_ACQUIRE);
 	}
 
 	@Test
 	public void testSetConstructSyntax() {
-		actual.setConstructSyntax(Constants.BARRIER_AWAIT);
-		assertEquals(Constants.BARRIER_AWAIT, actual.getConstructSyntax());
+		_actual.setConstructSyntax(Constants.BARRIER_AWAIT);
+		assertEquals(Constants.BARRIER_AWAIT, _actual.getConstructSyntax());
 	}
-
 }

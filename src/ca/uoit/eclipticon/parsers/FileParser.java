@@ -63,7 +63,7 @@ public class FileParser {
 				else if( fileTemp.isFile() ) {
 
 					// and the file is a source file
-					if( fileTemp.toString().endsWith( ".java" ) ) {
+					if( fileTemp.toString().endsWith( Constants.EXTENSION_JAVA ) ) {
 
 						allSourceFiles.add( new SourceFile( currentPath ) );
 					}
@@ -131,7 +131,7 @@ public class FileParser {
 									+ Constants.SYNCHRONIZE_BLOCK.length() );
 
 							// Keep looping till a delimiter for the synchronized is found
-							while( typeFound == 0 ) {
+							while( typeFound == Constants.SYNCHRONIZED_NOT_FOUND ) {
 								nextLine = bufReader.readLine();
 								lineNum++;
 
@@ -146,7 +146,7 @@ public class FileParser {
 							}
 
 							// The synchronized type is a block
-							if( typeFound == 1 ) {
+							if( typeFound == Constants.SYNCHRONIZED_BLOCK_FOUND ) {
 
 								// If the lines are different then we stop checking
 								if( currentLineNum != lineNum ) {
@@ -330,7 +330,7 @@ public class FileParser {
 	 */
 	private int determineSynchronizedType( String curLine, int synchronizedPosition ) {
 
-		int sychronizedType = 0;
+		int sychronizedType = Constants.SYNCHRONIZED_NOT_FOUND;
 
 		// If there are characters on this line then iterate through it
 		if( !curLine.isEmpty() ) {
@@ -346,14 +346,14 @@ public class FileParser {
 
 				// If the next character is a '(', we have a block synchronized
 				if( nextChar.equals( "(" ) ) {
-					sychronizedType = 1;
+					sychronizedType = Constants.SYNCHRONIZED_BLOCK_FOUND;
 					break;
 				}
 				else if( nextChar.matches( "\\s" ) ) { // Whitespace is found
 					// Consume it
 				}
 				else { // Another character showed up, we have a method synchronized
-					sychronizedType = 2;
+					sychronizedType = Constants.SYNCHRONIZED_METHOD_FOUND;
 					break;
 				}
 			}
@@ -466,7 +466,7 @@ public class FileParser {
 				if( fileTemp.isFile() ) {
 
 					// The file is a source file
-					if( fileTemp.toString().endsWith( ".eclipticon" ) ) {
+					if( fileTemp.toString().endsWith( Constants.EXTENSION_ECLIPTICON ) ) {
 						backupExists = true;
 
 					}
@@ -508,15 +508,14 @@ public class FileParser {
 				// When it reaches the line with the Interest Point on it
 				if( lineNum == ( instrumentationPoint.getLine() - 2 ) ) {
 					
-					// Delete annotation
-					if (deleteUpdateAdd == 0){
+					if (deleteUpdateAdd == Constants.ANNOTATION_DELETE){
 						currentLine = "";
 					}
-					else if (deleteUpdateAdd == 1){ // Update
+					else if (deleteUpdateAdd == Constants.ANNOTATION_UPDATE){
 						currentLine =  annotationParser.updateAnnotationComment( instrumentationPoint, currentLine );
 						buffer = buffer + currentLine + "\n";
 					}
-					else if (deleteUpdateAdd == 2){ // Add
+					else if (deleteUpdateAdd == Constants.ANNOTATION_ADD){
 						currentLine =  currentLine + "\n" + annotationParser.createAnnotationComment( instrumentationPoint );
 						buffer = buffer + currentLine + "\n";
 					}
@@ -550,6 +549,5 @@ public class FileParser {
 				fw.close();
 			}
 		}
-
 	}
 }

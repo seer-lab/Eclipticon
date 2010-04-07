@@ -7,7 +7,7 @@ package ca.uoit.eclipticon.data;
  * <p>
  * An interest point is composed of the line number in the source file, the construct of what synchronization it is
  * associated with and finally the sequence number. The sequence number represents the relative position of this
- * interest point to others in the same source line (first interest point is 0, the second one found is 1, etc...)
+ * interest point to others (same syntax) in the same source line (first interest point is 0, the second one found is 1, etc...)
  * 
  * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
  */

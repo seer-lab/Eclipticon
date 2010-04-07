@@ -19,7 +19,7 @@ package ca.uoit.eclipticon.instrumentation;
  * @author Chris Forbes, Kevin Jalbert, Cody LeBlanc
  */
 public @interface PreemptionPoint {
-
+// TODO need to add the syntax
 	int sequence() default 0;
 	String type();
 	int low() default 100;

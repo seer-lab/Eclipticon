@@ -46,10 +46,10 @@ public class NoiseMaker {
 		String noise = null;
 
 		// Create the noise statement based on the type of noise to make
-		if( type == Constants.SLEEP ) {
+		if( type == Constants.NOISE_SLEEP ) {
 			noise = getIfChance( chance ) + createSleep( low, high );
 		}
-		else if( type == Constants.YIELD ) {
+		else if( type == Constants.NOISE_YIELD ) {
 			noise = getIfChance( chance ) + createYield();
 		}
 

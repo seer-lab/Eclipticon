@@ -9,9 +9,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
 import ca.uoit.eclipticon.gui.Activator;
 
 /**
