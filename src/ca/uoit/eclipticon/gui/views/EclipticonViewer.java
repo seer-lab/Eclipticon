@@ -724,11 +724,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 					}
 					// Make all it's children the same check status
-					if( selectedItem.getItemCount() > 0 ) {
-						for( TreeItem i : selectedItem.getItems() ) {
-							i.setChecked( selectedItem.getChecked() );
-						}
-					}
+//					if( selectedItem.getItemCount() > 0 ) {
+//						for( TreeItem i : selectedItem.getItems() ) {
+//							
+//							
+//							i.setChecked( selectedItem.getChecked() );
+//						}
+//					}
 
 					selectedItem.setGrayed( false );
 				}
