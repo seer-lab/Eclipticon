@@ -1,40 +1,30 @@
 package ca.uoit.eclipticon.test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import junit.framework.TestCase;
-
-import ca.uoit.eclipticon.data.InstrumentationPoint;
-import ca.uoit.eclipticon.parsers.AnnotationParser;
-import ca.uoit.eclipticon.Constants;
-
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+
+import ca.uoit.eclipticon.Constants;
+import ca.uoit.eclipticon.data.InstrumentationPoint;
+import ca.uoit.eclipticon.parsers.AnnotationParser;
 
 public class AnnotationParserTest extends TestCase {
 
-	private final static ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-	private final static ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 
 	private AnnotationParser _annotationParser;
 	private InstrumentationPoint _instrumentationPoint;
 	private String _comment;
 	
-	@BeforeClass public static void setUpBeforeClass() throws Exception {
-	    System.setOut(new PrintStream(outContent));
-	    System.setErr(new PrintStream(errContent));
-	}
+	
 	
 	@Before public void setUp() throws Exception {
 		
 		_instrumentationPoint = new InstrumentationPoint(10, 1, Constants.BARRIER, Constants.BARRIER_AWAIT, Constants.NOISE_SLEEP, 55, 100, 1000);
 		_annotationParser = new AnnotationParser();
 		_comment = _annotationParser.createAnnotationComment(_instrumentationPoint);
-		System.out.println(_comment);
+
 		
 	}
 

@@ -38,7 +38,8 @@ public class SourceFileTest extends TestCase {
 			_path = _pathUnix;
 		}
 		else {
-			_sourceFile = new SourceFile( new Path( _pathWindows ) );
+			Path temp = new Path( _pathWindows );
+			_sourceFile = new SourceFile( temp );
 			_path = _pathWindows;
 		}
 	}
@@ -52,7 +53,7 @@ public class SourceFileTest extends TestCase {
 
 		boolean result = false;
 
-		if( _sourceFile.getName().equals( _name ) && ( _sourceFile.getPath().toString().equals( _path ) ) ) {
+		if( _sourceFile.getName().equals( _name ) && ( _sourceFile.getPath().toOSString().equals( _path ) ) ) {
 			result = true;
 		}
 		
@@ -61,7 +62,7 @@ public class SourceFileTest extends TestCase {
 
 	@Test
 	public void testGetPath() {
-		assertEquals( _path, _sourceFile.getPath().toString() );
+		assertEquals( _path, _sourceFile.getPath().toOSString() );
 	}
 
 	@Test

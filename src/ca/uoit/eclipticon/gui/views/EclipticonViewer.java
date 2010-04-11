@@ -639,7 +639,11 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	public void setSelection( ISelection arg0, boolean arg1 ) {
 	}
 	
-	public void refreshTreeItem(TreeItem parent){
+	/**
+	 * Updates the Tree Item Parent 
+	 * @param parent
+	 */
+	private void refreshTreeItem(TreeItem parent){
 		
 		SourceFile sf = (SourceFile) parent.getData();
 		sf.clearInterestingPoints();

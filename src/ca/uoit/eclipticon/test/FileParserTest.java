@@ -252,23 +252,23 @@ public class FileParserTest extends TestCase {
 		assertEquals( true, true );
 	}
 	
-	@Test
-	public void testCheckIfBackupExists() {
-		fail( "Not yet implemented" ); // TODO
-	}
-
-	@Test
-	public void testManipulateAnnotationDelete() {
-		fail( "Not yet implemented" ); // TODO
-	}
-
-	@Test
-	public void testManipulateAnnotationUpdate() {
-		fail( "Not yet implemented" ); // TODO
-	}
-
-	@Test
-	public void testManipulateAnnotationAdd() {
-		fail( "Not yet implemented" ); // TODO
-	}
+//	@Test
+//	public void testCheckIfBackupExists() {
+//		fail( "Not yet implemented" ); // TODO
+//	}
+//
+//	@Test
+//	public void testManipulateAnnotationDelete() {
+//		fail( "Not yet implemented" ); // TODO
+//	}
+//
+//	@Test
+//	public void testManipulateAnnotationUpdate() {
+//		fail( "Not yet implemented" ); // TODO
+//	}
+//
+//	@Test
+//	public void testManipulateAnnotationAdd() {
+//		fail( "Not yet implemented" ); // TODO
+//	}
 }

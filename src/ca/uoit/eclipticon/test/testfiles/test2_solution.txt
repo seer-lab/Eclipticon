@@ -1,6 +1,6 @@
-package ca.uoit.eclipticon.test.testfiles;
+package ca.uoit.eclipticon.test.testfiles;import java.util.Random;
 
-import java.util.concurrent.*;import java.util.Random;
+import java.util.concurrent.*;
 
 import ca.uoit.eclipticon.instrumentation.*;
 
