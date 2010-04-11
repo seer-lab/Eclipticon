@@ -178,10 +178,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		TreeColumn col2 = new TreeColumn( _tree, SWT.LEFT );
 		col2.setText( "Type" );
 		col2.setWidth( 100 );
-
+		
 		TreeColumn col3 = new TreeColumn( _tree, SWT.LEFT );
-		col3.setText( "Delay" );
-		col3.setWidth( 60 );
+		col3.setText( "Syntax" );
+		col3.setWidth( 100 );
+
+		TreeColumn col4 = new TreeColumn( _tree, SWT.LEFT );
+		col4.setText( "Delay" );
+		col4.setWidth( 60 );
 		_tree.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 
 		_tree.setLinesVisible( true );
@@ -548,7 +552,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				item.setData( sf );
 				for( InterestPoint ip : sf.getInterestingPoints() ) {
 					TreeItem subItem = new TreeItem( item, SWT.NONE );
-					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), "" };
+					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), ip.getConstructSyntax(),"" };
 					subItem.setText( strings );
 					subItem.setData( ip );
 					if( ip instanceof InstrumentationPoint ) {
@@ -556,9 +560,9 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						item.setChecked( true );
 						InstrumentationPoint tempIP = (InstrumentationPoint)ip;
 						if( tempIP.getType() == Constants.NOISE_SLEEP )
-							subItem.setText( 2, "Sleep" );
+							subItem.setText( 3, "Sleep" );
 						else if( tempIP.getType() == Constants.NOISE_YIELD )
-							subItem.setText( 2, "Yield" );
+							subItem.setText( 3, "Yield" );
 						someChecked = true;
 					}
 					else {
@@ -648,22 +652,22 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			count++;
 			i.setData( ipCurrent );
 			
-			String[] strings = { "Line: " + ipCurrent.getLine(), ipCurrent.getConstruct(), "" };
+			String[] strings = { "Line: " + ipCurrent.getLine(), ipCurrent.getConstruct(), ipCurrent.getConstructSyntax(), "" };
 			i.setText( strings );
 			
 			if( ipCurrent instanceof InstrumentationPoint ) {
 				
 				InstrumentationPoint tempIP = (InstrumentationPoint)ipCurrent;
 				if( tempIP.getType() == Constants.NOISE_SLEEP )
-					i.setText( 2, "Sleep" );
+					i.setText( 3, "Sleep" );
 				else if( tempIP.getType() == Constants.NOISE_YIELD )
-					i.setText( 2, "Yield" );
+					i.setText( 3, "Yield" );
 			}
 			
 			// If it comes to a sibling that isn't selected the root is grayed
 			if( !i.getChecked() ) {
 				parent.setGrayed( true );
-				break;
+				
 			}
 		}
 	}
@@ -1025,8 +1029,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	public void checkButtons() {
 		// There's backup files, so set appropriate text for the buttons
 		if( _newFP.checkIfBackupExists( _workspacePath ) ) {
-			_autoButton.setText( "Revert Files" );
-			_manualButton.setText( "Revert Files" );
+			_autoButton.setText( "Uninstrument" );
+			_manualButton.setText( "Uninstrument" );
 		}
 		else {
 			_autoButton.setText( "Instrument Files" );

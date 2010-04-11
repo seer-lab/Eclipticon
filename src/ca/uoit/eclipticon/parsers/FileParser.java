@@ -119,7 +119,13 @@ public class FileParser {
 
 					// Handle appropriate synchronized method calls if they reside on current line
 					handleFindingMethods( curLine, currentLineNum, source );
-
+					
+					// If there's an annotation point ignore the line
+					if (annotationParser.checkAnnotationExists( curLine )){
+						_interestPointsOnLine.clear();
+						synchronizedOnSameLine = false;
+					}
+					
 					while( synchronizedOnSameLine ) {
 
 						synchronizedPosition = findNextSynchronized( curLine, currentLineNum, synchronizedPosition );
@@ -510,14 +516,20 @@ public class FileParser {
 				if( lineNum == ( instrumentationPoint.getLine() - 2 ) ) {
 					
 					if (deleteUpdateAdd == Constants.ANNOTATION_DELETE){
-						currentLine = "";
+						currentLine = annotationParser.deleteAnnotationComment( instrumentationPoint, currentLine );
+						if (annotationParser.checkAnnotationExists( currentLine ))
+							currentLine += "\n";
+						buffer = buffer + currentLine;
 					}
 					else if (deleteUpdateAdd == Constants.ANNOTATION_UPDATE){
 						currentLine =  annotationParser.updateAnnotationComment( instrumentationPoint, currentLine );
 						buffer = buffer + currentLine + "\n";
 					}
 					else if (deleteUpdateAdd == Constants.ANNOTATION_ADD){
-						currentLine =  currentLine + "\n" + annotationParser.createAnnotationComment( instrumentationPoint );
+						if (!annotationParser.checkAnnotationExists( currentLine)){
+							currentLine =  currentLine + "\n";
+						}
+						currentLine =  currentLine + " " + annotationParser.createAnnotationComment( instrumentationPoint );
 						buffer = buffer + currentLine + "\n";
 					}
 				}

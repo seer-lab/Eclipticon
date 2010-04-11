@@ -42,9 +42,9 @@ public class AnnotationParserTest extends TestCase {
 		
 		// update the instrumentation point
 		_instrumentationPoint = new InstrumentationPoint(10, 1, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE, Constants.NOISE_SLEEP, 89, 101, 999);
-		String comment = "/* @PreemptionPoint (sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (sequence = 1, type = \"sleep\", low = 100, high = 1000, probability = 55) */ /* @PreemptionPoint (sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* blah */ if (test == pass) return win;";
+		String comment = "/* @PreemptionPoint (syntax = .acquire, sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (syntax = .acquire, sequence = 1, type = \"sleep\", low = 100, high = 1000, probability = 55) */ /* @PreemptionPoint (syntax = .acquire, sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* blah */ if (test == pass) return win;";
 		String updated = _annotationParser.updateAnnotationComment(_instrumentationPoint, comment);
-		String answer = "/* @PreemptionPoint (sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (sequence = 1, type = \"sleep\", low = 101, high = 999, probability = 89) */  /* @PreemptionPoint (sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* blah */ if (test == pass) return win;";
+		String answer = "/* @PreemptionPoint (syntax = .acquire, sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (syntax = .acquire, sequence = 1, type = \"sleep\", low = 101, high = 999, probability = 89) */  /* @PreemptionPoint (syntax = .acquire, sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* blah */ if (test == pass) return win;";
 		assertEquals(answer, updated);
 	}
 	
@@ -52,9 +52,9 @@ public class AnnotationParserTest extends TestCase {
 		
 		// update the instrumentation point
 		_instrumentationPoint = new InstrumentationPoint(10, 1, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE, Constants.NOISE_SLEEP, 89, 101, 999);
-		String comment = "/* @PreemptionPoint (sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* blah */";
+		String comment = "/* @PreemptionPoint (syntax = .acquire, sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (syntax = .acquire, sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/";
 		String updated = _annotationParser.updateAnnotationComment(_instrumentationPoint, comment);
-		String answer = "/* @PreemptionPoint (sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (sequence = 1, type = \"sleep\", low = 101, high = 999, probability = 89) */  /* @PreemptionPoint (sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* blah */";
+		String answer = "/* @PreemptionPoint (syntax = .acquire, sequence = 0, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (syntax = .acquire, sequence = 2, type = \"sleep\", low = 10, high = 1200, probability = 75)*/ /* @PreemptionPoint (syntax = .acquire, sequence = 1, type = \"sleep\", low = 101, high = 999, probability = 89) */";
 		assertEquals(answer, updated);
 	}
 	
