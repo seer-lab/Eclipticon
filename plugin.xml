@@ -9,7 +9,7 @@
             id="Eclipticon">
       </category>
       <view
-            name="Instrumentation Points"
+            name="Eclipticon"
             icon="icons/sample.gif"
             category="Eclipticon"
             class="ca.uoit.eclipticon.gui.views.InstrumentationView"
