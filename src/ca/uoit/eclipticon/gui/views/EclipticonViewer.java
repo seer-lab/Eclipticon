@@ -694,7 +694,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			}
 		}
 	}
-
+	
 	@Override
 	/*
 	 * Takes care of the widget selections
@@ -983,23 +983,28 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		
 		// Upon the widget loosing focus it checks to see if anything has been modified
 		if( _modified ) {
-
-			// If it has been modified
-			TreeItem[] selectedItem = _tree.getSelection();
-			InstrumentationPoint pointChanging = (InstrumentationPoint)selectedItem[ 0 ].getData();
+			TreeItem[] selectedItem = null;
+			InstrumentationPoint pointChanging = null;
+			if( e.widget != _txtAutoHigher && e.widget != _txtAutoLower ) {
+				// If it has been modified
+				selectedItem = _tree.getSelection();
+				pointChanging = (InstrumentationPoint)selectedItem[ 0 ].getData();
 			
-			// Find which widget lost focus then update it
-			if( e.widget == _txtHigher ) {
-				pointChanging.setHigh( Integer.parseInt( _txtHigher.getText() ) );
-				temp = 1;
-			}
-			else if( e.widget == _txtLower ) {
-				pointChanging.setLow( Integer.parseInt( _txtLower.getText() ) );
-				temp = 1;
-			}
-			else if( e.widget == _txtProb ) {
-				pointChanging.setProbability( Integer.parseInt( _txtProb.getText() ) );
-				temp = 1;
+			
+			
+				// Find which widget lost focus then update it
+				if( e.widget == _txtHigher ) {
+					pointChanging.setHigh( Integer.parseInt( _txtHigher.getText() ) );
+					temp = 1;
+				}
+				else if( e.widget == _txtLower ) {
+					pointChanging.setLow( Integer.parseInt( _txtLower.getText() ) );
+					temp = 1;
+				}
+				else if( e.widget == _txtProb ) {
+					pointChanging.setProbability( Integer.parseInt( _txtProb.getText() ) );
+					temp = 1;
+				}
 			}
 			else if( e.widget == _txtAutoHigher ) {
 				_ach.getConfiguration().setHighDelayRange( Integer.parseInt( _txtAutoHigher.getText() ) );
