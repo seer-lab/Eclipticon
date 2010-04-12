@@ -78,6 +78,10 @@ public class MethodCallValidator {
 				return true;
 			}
 		}
+		else {
+			// TODO Not sure how to handle defualt package yet (accept it for now)
+			return true;
+		}
 
 		// Match on the import statement
 		_matcher = Constants.PATTERN_IMPORT.matcher( importsAndPackage );

@@ -56,8 +56,8 @@ public final class Constants {
 	static public int		ANNOTATION_ADD						= 2;
 
 	/** These are the Regexs and Patterns used */
-	static private	String 	REGEX_PACKAGE 	= "([package]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\*]*[\\s]*;)";
-	static private  String 	REGEX_IMPORT 	= "([import]+[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\s]*;)";
+	static private	String 	REGEX_PACKAGE 	= "(package[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\*]*[\\s]*;)";
+	static private  String 	REGEX_IMPORT 	= "(import[\\s]+[a-z][a-z\\.\\d\\-\\_\\s]*[\\s]*;)";
 	static private 	String 	REGEX_METHOD 	= "synchronized[\\s]+?[public|private|protector]+[\\s]*?[\\w]+?[\\s]+?(\\w+)\\(";
 	static private 	String 	REGEX_CLASS 	= "(public|private|protected|\\s)+[(\\s)+](class|interface|abstract class)[(\\s)+]([a-z]+[a-z0-9_])*[(\\s)+](.*?)(\\{)";
 	static public 	Pattern PATTERN_PACKAGE = Pattern.compile( REGEX_PACKAGE, Pattern.CASE_INSENSITIVE | Pattern.DOTALL );

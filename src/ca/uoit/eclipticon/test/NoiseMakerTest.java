@@ -43,11 +43,11 @@ public class NoiseMakerTest extends TestCase {
 
 	@Test
 	public void testMakeNoiseSleep() {
-		assertEquals( "if((_____rand0123456789_____.nextInt(100-0)+0)<=5)try{Thread.sleep((_____rand0123456789_____.nextInt(30-20)+20));}catch(Exception e){};", noiseMakers.makeNoise( 5, 0, 20, 30 ) );
+		assertEquals( "if((_____rand0123456789_____.nextInt(100-0)+0)<=5)try{Thread.sleep((_____rand0123456789_____.nextInt(30-20)+20));}catch(Exception _____e0123456789_____){};", noiseMakers.makeNoise( 5, 0, 20, 30 ) );
 	}
 	
 	@Test
 	public void testMakeNoiseYield() {
-		assertEquals( "if((_____rand0123456789_____.nextInt(100-0)+0)<=50)try{Thread.yield();}catch(Exception e){};", noiseMakers.makeNoise( 50, Constants.NOISE_YIELD, 0, 0 ) );
+		assertEquals( "if((_____rand0123456789_____.nextInt(100-0)+0)<=50)try{Thread.yield();}catch(Exception _____e0123456789_____){};", noiseMakers.makeNoise( 50, Constants.NOISE_YIELD, 0, 0 ) );
 	}
 }

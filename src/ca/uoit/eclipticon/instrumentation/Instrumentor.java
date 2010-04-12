@@ -327,23 +327,20 @@ public class Instrumentor {
 		int importEndPos = 0;
 		int classEndPos = 0;
 
-		// Match on the import statement
-		matcher = Constants.PATTERN_IMPORT.matcher( instrumentedCode );
+		// Set matcher to find package
+		matcher = Constants.PATTERN_PACKAGE.matcher( instrumentedCode );
 		if( matcher.find() ) {
 
-			// Append from the start till the end of the matched import and add the import statement
+			// Append from the start till the end of the matched package and add the import statement
 			importEndPos = matcher.end();
 			finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos )
 					+ _noiseMaker.makeRandImport() );
 		}
-		else { // Try to match on package
-
-			// Set matcher to find package
-			matcher = Constants.PATTERN_PACKAGE.matcher( instrumentedCode );
-
+		else { // Try to match on import instead
+			matcher = Constants.PATTERN_IMPORT.matcher( instrumentedCode );
 			if( matcher.find() ) {
 
-				// Append from the start till the end of the matched package and add the import statement
+				// Append from the start till the end of the matched import and add the import statement
 				importEndPos = matcher.end();
 				finalInstrumentedCode = finalInstrumentedCode.concat( instrumentedCode.substring( 0, importEndPos )
 						+ _noiseMaker.makeRandImport() );
