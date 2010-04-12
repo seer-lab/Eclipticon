@@ -33,7 +33,7 @@ public class FileParser {
 	 * of {@link SourceFile}.
 	 *
 	 * @param root the root path of the workplace
-	 * @return an arraylist of {@link SourceFiles}
+	 * @return an arraylist of {@link SourceFile}
 	 */
 	public ArrayList<SourceFile> getFiles( Path root ) {
 

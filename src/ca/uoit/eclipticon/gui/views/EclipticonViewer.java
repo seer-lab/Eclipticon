@@ -184,7 +184,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		col3.setWidth( 100 );
 
 		TreeColumn col4 = new TreeColumn( _tree, SWT.LEFT );
-		col4.setText( "Delay" );
+		col4.setText( "Noise" );
 		col4.setWidth( 60 );
 		_tree.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 
