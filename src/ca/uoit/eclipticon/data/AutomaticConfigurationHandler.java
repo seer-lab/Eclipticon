@@ -78,28 +78,36 @@ public class AutomaticConfigurationHandler {
 		// TODO: Handle file not found.
 		try {
 			File file = new File( _xmlLocation );
-			BufferedReader bufferedReader = new BufferedReader( new FileReader( file ) );
-			_input = bufferedReader.readLine();
+			
+			// Make sure file can be read
+			if (file.canRead()){
+				
+				BufferedReader bufferedReader = new BufferedReader( new FileReader( file ) );
+				_input = bufferedReader.readLine();
+				
+				//Get a list of Instrumentation Points
+				if (_input != null){
+					// Read in the values for the current Instrumentation Point
+					if( _input.length() > 0 ) {
+						_configurationData.setBarrierProbability( Integer.valueOf( getNextValue() ) );
+						_configurationData.setLowDelayRange( Integer.valueOf( getNextValue() ) );
+						_configurationData.setHighDelayRange( Integer.valueOf( getNextValue() ) );
+						_configurationData.setSleepProbability( Integer.valueOf( getNextValue() ) );
+						_configurationData.setYieldProbability( Integer.valueOf( getNextValue() ) );
+						_configurationData.setSynchronizeProbability( Integer.valueOf( getNextValue() ) );
+						_configurationData.setLatchProbability( Integer.valueOf( getNextValue() ) );
+						_configurationData.setSemaphoreProbability( Integer.valueOf( getNextValue() ) );
+					}
+				}
+			}
+
 		}
 		catch( IOException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		//Get a list of Instrumentation Points
-
-		// Read in the values for the current Instrumentation Point
-		if( _input.length() > 0 ) {
-			_configurationData.setBarrierProbability( Integer.valueOf( getNextValue() ) );
-			_configurationData.setLowDelayRange( Integer.valueOf( getNextValue() ) );
-			_configurationData.setHighDelayRange( Integer.valueOf( getNextValue() ) );
-			_configurationData.setSleepProbability( Integer.valueOf( getNextValue() ) );
-			_configurationData.setYieldProbability( Integer.valueOf( getNextValue() ) );
-			_configurationData.setSynchronizeProbability( Integer.valueOf( getNextValue() ) );
-			_configurationData.setLatchProbability( Integer.valueOf( getNextValue() ) );
-			_configurationData.setSemaphoreProbability( Integer.valueOf( getNextValue() ) );
-		}
-
+		
 	}
 
 	/**

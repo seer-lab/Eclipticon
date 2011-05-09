@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.Viewer;
@@ -31,7 +32,6 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Scale;
-import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
@@ -45,7 +45,6 @@ import ca.uoit.eclipticon.data.InterestPoint;
 import ca.uoit.eclipticon.data.SourceFile;
 import ca.uoit.eclipticon.gui.EditorHandler;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
-import ca.uoit.eclipticon.parsers.AnnotationParser;
 import ca.uoit.eclipticon.parsers.FileParser;
 import ca.uoit.eclipticon.parsers.PreParser;
 
@@ -73,15 +72,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	Scale							_scaleSemaphores	= null;
 	Scale							_scaleLatches		= null;
 	Boolean							_test				= false;
-	Tree							_tree				= null;
-	Tree							_tree2				= null;
+	Tree							_treeManual			= null;
+	Tree							_treeAuto			= null;
 	Boolean							_modified			= false;
 	AutomaticConfigurationHandler	_ach				= null;
 	FileParser						_newFP				= null;
 	Path							_workspacePath		= null;
 
 	public EclipticonViewer( Composite parent, int i ) {
-		// TODO Auto-generated constructor stub
 		super();
 		_newFP = new FileParser();
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
@@ -103,7 +101,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// Create and populate the Two tabs
 		createManualTab( _folderTab );
 		createAutoTab( _folderTab );
-		disableInfoLabels();
+		disableManualInfoLabels();
 		fillTree();
 		// Initialize the models
 
@@ -113,14 +111,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			// Read in their XML's
 			_ach.readXml();
 			
-			// Populate the table and the Auto Tab
+			// Populate the tree and the Auto Tab
 			populateAutoTab( _ach.getConfiguration() );
 
-			// Initialize the tables selection to the first item and fill the info at the bottom
+			// Initialize the trees selection to the first item and fill the info at the bottom
 
 		}
 		catch( FileNotFoundException e ) {
-			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 		}
 
@@ -170,43 +168,43 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		GridLayout gridLayout = new GridLayout();
 		composite.setLayout( gridLayout );
 
-		_tree = new Tree( composite, SWT.MULTI | SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER );
-		TreeColumn col1 = new TreeColumn( _tree, SWT.LEFT );
+		_treeManual = new Tree( composite, SWT.MULTI | SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER );
+		TreeColumn col1 = new TreeColumn( _treeManual, SWT.LEFT );
 
 		col1.setText( "Instrumentation Point" );
 
-		TreeColumn col2 = new TreeColumn( _tree, SWT.LEFT );
+		TreeColumn col2 = new TreeColumn( _treeManual, SWT.LEFT );
 		col2.setText( "Type" );
 		col2.setWidth( 100 );
 		
-		TreeColumn col3 = new TreeColumn( _tree, SWT.LEFT );
+		TreeColumn col3 = new TreeColumn( _treeManual, SWT.LEFT );
 		col3.setText( "Syntax" );
 		col3.setWidth( 100 );
 
-		TreeColumn col4 = new TreeColumn( _tree, SWT.LEFT );
+		TreeColumn col4 = new TreeColumn( _treeManual, SWT.LEFT );
 		col4.setText( "Noise" );
 		col4.setWidth( 60 );
-		_tree.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
+		_treeManual.setLayoutData( new GridData( SWT.FILL, SWT.FILL, true, true ) );
 
-		_tree.setLinesVisible( true );
-		_tree.setHeaderVisible( true );
-		_tree.addSelectionListener( this );
-		_tree.addTreeListener( new TreeListener() {
+		_treeManual.setLinesVisible( true );
+		_treeManual.setHeaderVisible( true );
+		_treeManual.addSelectionListener( this );
+		_treeManual.addTreeListener( new TreeListener() {
 
 			@Override
 			public void treeCollapsed( TreeEvent e ) {
-				// TODO Auto-generated method stub
-				_tree.getColumn( 0 ).pack();
+		
+				_treeManual.getColumn( 0 ).pack();
 			}
 
 			@Override
 			public void treeExpanded( TreeEvent e ) {
-				// TODO Auto-generated method stub
-				_tree.getColumn( 0 ).pack();
+				
+				_treeManual.getColumn( 0 ).pack();
 			}
 
 		} );
-		_tree.getColumn( 0 ).pack();
+		_treeManual.getColumn( 0 ).pack();
 
 		// Create a Section for the properties
 		Group groupProperties = new Group( composite, SWT.NULL );
@@ -462,44 +460,39 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		hundredLbl4.setLayoutData( gridData );
 		hundredLbl4.setText( "100" );
 
-		_tree2 = new Tree( groupSettings, SWT.MULTI | SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER );
+		_treeAuto = new Tree( groupSettings, SWT.MULTI | SWT.FULL_SELECTION | SWT.CHECK | SWT.BORDER );
 		gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
 		gridData.horizontalSpan = 3;
-		_tree2.setLayoutData( gridData );
+		_treeAuto.setLayoutData( gridData );
 
-		TreeColumn col1 = new TreeColumn( _tree2, SWT.LEFT );
-
+		TreeColumn col1 = new TreeColumn( _treeAuto, SWT.LEFT );
+		TreeColumn col2 = new TreeColumn( _treeAuto, SWT.LEFT );
+		TreeColumn col3 = new TreeColumn( _treeAuto, SWT.LEFT );
+		
 		col1.setText( "Files to be Instrumented" );
-
-		_tree2.setLinesVisible( true );
-		_tree2.setHeaderVisible( true );
-		_tree2.addSelectionListener( this );
-		_tree2.addTreeListener( new TreeListener() {
-
-			@Override
-			public void treeCollapsed( TreeEvent e ) {
-
-			}
-
-			@Override
-			public void treeExpanded( TreeEvent e ) {
-				// TODO Auto-generated method stub
-				_tree2.getColumn( 0 ).pack();
-
-			}
-
-		} );
-		_tree2.getColumn( 0 ).pack();
-
+		col1.setWidth(300 );
+		
+		col2.setText( "Lower Bound" );
+		col2.setWidth(100 );
+		
+		col3.setText( "Upper Bound" );
+		col3.setWidth( 100 );
+		
+		_treeAuto.setLinesVisible( true );
+		_treeAuto.setHeaderVisible( true );
+		_treeAuto.addSelectionListener( this );
+			
 		// Default Button
 		_autoButton = new Button( groupSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
 		gridData.horizontalSpan = 3;
 		_autoButton.setLayoutData( gridData );
+		
 		if( _newFP.checkIfBackupExists( _workspacePath ) )
 			_autoButton.setText( "Revert Files" );
 		else
 			_autoButton.setText( "Instrument Files" );
+		
 		_autoButton.addSelectionListener( this );
 		tabAuto.setControl( composite );
 	}
@@ -519,18 +512,129 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_scaleSync.setSelection( autoConfig.getSynchronizeProbability() );
 		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
 
+		// First go through and create all of the directory trees
+		// ------------------------------------------------------
 		for( SourceFile sf : sources ) {
-			TreeItem item = new TreeItem( _tree2, SWT.NONE );
-			item.setText( sf.getName() );
-			item.setData( sf );
-			item.setChecked( true );
+			
+			// Get the path from the workspace
+			IPath folderPath =  sf.getPath().makeRelativeTo(_workspacePath);
+			folderPath = folderPath.removeLastSegments(1);
+			//Get the tree items and find the path in the tree
+
+			Object parentItem = _treeAuto;
+			
+			// Iterate all of the path folders
+			for (String currentSegment:folderPath.segments()){
+
+				// Go through Children of current folder and try to match to an item 
+				Boolean found = false;
+				TreeItem[] items = new TreeItem[0];
+				
+				if (parentItem instanceof TreeItem){
+					items = ((TreeItem) parentItem).getItems();
+					
+				}
+				else if (parentItem instanceof Tree){
+					items = ((Tree) parentItem).getItems();
+					
+				}
+				
+				for (TreeItem currentItem: items){
+										
+					if (currentItem.getText(0).compareTo(currentSegment) == 0){
+						found = true;
+						parentItem = currentItem;
+						break;
+						
+					}
+					
+				}
+				
+				// Check if matched, make one if not
+				
+				if (!found){
+					if (parentItem instanceof TreeItem){
+						TreeItem item = new TreeItem((TreeItem) parentItem,SWT.NONE );
+						String[] tempStr = {currentSegment, "",""};
+						item.setText(tempStr);
+						parentItem = item;
+						
+					}
+					else if (parentItem instanceof Tree){
+						TreeItem item = new TreeItem((Tree) parentItem,SWT.NONE );
+						
+						String[] tempStr = {currentSegment, "",""};
+						
+						item.setText(tempStr);
+						parentItem = item;
+					}
+					
+				}	
+				
+			}
 		}
-		_tree2.getColumn( 0 ).pack();
+		
+		// Place the files in now
+		// ----------------------
+		for( SourceFile sf : sources ) {
+			
+			// Get the path from the workspace
+			IPath folderPath =  sf.getPath().makeRelativeTo(_workspacePath);
+			folderPath = folderPath.removeLastSegments(1);
+			//Get the tree items and find the path in the tree
+
+			Object parentItem = _treeAuto;
+			
+			// Iterate all of the path folders
+			for (String currentSegment:folderPath.segments()){
+
+				// Go through Children of current folder and try to match to an item 
+				TreeItem[] items = new TreeItem[0];
+				
+				if (parentItem instanceof TreeItem){
+					items = ((TreeItem) parentItem).getItems();
+					
+				}
+				else if (parentItem instanceof Tree){
+					items = ((Tree) parentItem).getItems();
+					
+				}
+				
+				for (TreeItem currentItem: items){
+										
+					if (currentItem.getText(0).compareTo(currentSegment) == 0){
+						parentItem = currentItem;
+						break;
+					}
+				}
+			}
+			
+			
+			// Have the final Location of the SF now add it to the tree
+			if (parentItem instanceof TreeItem){
+				TreeItem item = new TreeItem( (TreeItem) parentItem, SWT.NONE );
+				String[] tempStr = {sf.getName(), "0","100"};
+				item.setText(tempStr);
+				item.setData( sf );
+				item.setChecked( true );
+				
+			}
+			else if (parentItem instanceof Tree){
+				TreeItem item = new TreeItem((Tree) parentItem, SWT.NONE );
+				String[] tempStr = {sf.getName(), "0","100"};
+				item.setText(tempStr);
+				item.setData( sf );
+				item.setChecked( true );
+			}
+			
+
+		}
+
 
 	}
 
 	/**
-	 * Fills the table with the instrumentation points specified in the XML file
+	 * Fills the Manual Tabs tree with the instrumentation points specified in the XML file
 	 * 
 	 * @param instrPoints
 	 */
@@ -547,7 +651,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			_newFP.findInterestPoints( sf );
 			boolean someChecked = false;
 			if( sf.getInterestingPoints().size() > 0 || _test ) {
-				TreeItem item = new TreeItem( _tree, SWT.NONE );
+				TreeItem item = new TreeItem( _treeManual, SWT.NONE );
 				item.setText( sf.getName() );
 				item.setData( sf );
 				for( InterestPoint ip : sf.getInterestingPoints() ) {
@@ -576,11 +680,11 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	}
 
 	/**
-	 * Fill the information below the tables on the manual tab.
+	 * Fill the information below the trees on the manual tab.
 	 * 
 	 * @param instrPoint
 	 */
-	public void fillInfoLabels( InstrumentationPoint instrPoint ) {
+	public void fillManualInfoLabels( InstrumentationPoint instrPoint ) {
 		// Sets the the Combo box
 		if( instrPoint.getType() == Constants.NOISE_SLEEP )
 			_cmbType.select( _cmbType.indexOf( "Sleep" ) );
@@ -594,8 +698,11 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtHigher.setEnabled( true );
 		_txtProb.setEnabled( true );
 	}
-
-	public void disableInfoLabels() {
+	
+	/**
+	 * Disable the Manual Tabs Info Labels
+	 */
+	public void disableManualInfoLabels() {
 		_cmbType.setText( "" );
 		_txtLower.setText( "" );
 		_txtHigher.setText( "" );
@@ -606,11 +713,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtProb.setEnabled( false );
 	}
 
-	/**
-	 * Clears the table and repopulates from the model
-	 */
-	public void refreshTable() {
-	}
 
 	@Override
 	public Control getControl() {
@@ -643,7 +745,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * Updates the Tree Item Parent 
 	 * @param parent
 	 */
-	private void refreshTreeItem(TreeItem parent){
+	private void refreshManualTreeItem(TreeItem parent){
 		
 		SourceFile sf = (SourceFile) parent.getData();
 		sf.clearInterestingPoints();
@@ -689,11 +791,24 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				SourceFile sFSelected = (SourceFile)data;
 				eH.openFile( sFSelected.getPath() );
 			}
-			else if( data instanceof InterestPoint ) {
-				InterestPoint iPSelected = (InterestPoint)data;
+		}
+	}
+	
+	/**
+	 * Update the children Tree Items
+	 * @param item
+	 */
+	void updateChildrenItems(TreeItem item){
+		// Make all it's children the same check status
+		if( item.getItemCount() > 0 ) {
+			for( TreeItem i : item.getItems() ) {
+				i.setChecked( item.getChecked() );
+				i.setGrayed(false);
+				updateChildrenItems(i);
 			}
 		}
 	}
+	
 	
 	@Override
 	/*
@@ -701,93 +816,107 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 */
 	public void widgetSelected( SelectionEvent arg0 ) {
 
-		// The widget selected was an item in our table
-		if( arg0.item instanceof TableItem ) {
-			// Grab the model and populate the info
-			TableItem selectedItem = (TableItem)arg0.item;
-			InstrumentationPoint selectedPoint = (InstrumentationPoint)selectedItem.getData();
-			fillInfoLabels( selectedPoint );
-		}
 
 		// Selected Item was something in our Tree
-		else if( arg0.item instanceof TreeItem ) {
+		if( arg0.item instanceof TreeItem ) {
 
 			TreeItem selectedItem = (TreeItem)arg0.item;
-
+			
 			// If the selection was checking a checkbox
 			if( arg0.detail == SWT.CHECK ) {
-
-				// and the selection was at the root (File Names)
-				if( selectedItem.getParentItem() == null ) {
+				
+				if (selectedItem.getParent() == _treeAuto){
+					
+					// If it is grayed, make it checked
 					if( selectedItem.getGrayed() ) {
 						selectedItem.setChecked( true );
-
+						selectedItem.setGrayed( false );
 					}
-					// Make all it's children the same check status
-//					if( selectedItem.getItemCount() > 0 ) {
-//						for( TreeItem i : selectedItem.getItems() ) {
-//							
-//							
-//							i.setChecked( selectedItem.getChecked() );
-//						}
-//					}
-
-					selectedItem.setGrayed( false );
+					
+					
+					//Recursively update children
+					updateChildrenItems(selectedItem);
+				
+					TreeItem item = selectedItem.getParentItem();
+				
+					if (item != null)
+						verifyTreeItemParent(item);
 				}
-				// but if the selection was not at the root (Line numbers)
-				else {
-
-					// Get it's root item (File Name)
-					TreeItem parent = selectedItem.getParentItem();
-
-					// Check the root
-					selectedItem.getParentItem().setChecked( true );
-					// Start it not grayed
-					parent.setGrayed( false );
-
-					// Check to see if it was checked or unchecked
-					if( selectedItem.getChecked() ) {
-						refreshTreeItem( parent );
-						
-						// Create annotation
-						InterestPoint ip = (InterestPoint)selectedItem.getData();
-						InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.NOISE_YIELD, 100, 0, 1000);
-						SourceFile sf = (SourceFile) parent.getData();
-						try {
-							_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD);
+				
+				else{
+					
+					// and the selection was at the root (File Names)
+					if( selectedItem.getParentItem() == null ) {
+						if( selectedItem.getGrayed() ) {
+							selectedItem.setChecked( true );
+	
 						}
-						catch( IOException e ) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}		
-						refreshTreeItem( parent );
+						// Make all it's children the same check status
+						if( selectedItem.getItemCount() > 0 ) {
+							for( TreeItem i : selectedItem.getItems() ) {
+								
+								
+								i.setChecked( selectedItem.getChecked() );
+							}
+						}
+	
+						selectedItem.setGrayed( false );
 					}
-
-					// It was unchecked
+					// but if the selection was not at the root (Line numbers)
 					else {
-						parent.setChecked( false );
-						refreshTreeItem( parent );
+	
+						// Get it's root item (File Name)
+						TreeItem parent = selectedItem.getParentItem();
+	
+						// Check the root
+						selectedItem.getParentItem().setChecked( true );
+						// Start it not grayed
+						parent.setGrayed( false );
+	
+						// Check to see if it was checked or unchecked
+						if( selectedItem.getChecked() ) {
+							refreshManualTreeItem( parent );
+							
+							// Create annotation
+							InterestPoint ip = (InterestPoint)selectedItem.getData();
+							InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.NOISE_YIELD, 100, 0, 1000);
+							SourceFile sf = (SourceFile) parent.getData();
+							try {
+								_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD);
+							}
+							catch( IOException e ) {
 						
-						InstrumentationPoint ip = (InstrumentationPoint)selectedItem.getData();
-						SourceFile sf = (SourceFile) parent.getData();
-						try {
-							_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE);
+								e.printStackTrace();
+							}		
+							refreshManualTreeItem( parent );
 						}
-						catch( IOException e ) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-						refreshTreeItem( parent );
-						// Go through all the siblings
-						for( TreeItem i : parent.getItems() ) {
-
-							// if comes to one that is checked make the root
-							// grayed
-							if( i.getChecked() ) {
-								parent.setChecked( true );
-								parent.setGrayed( true );
-								break;
+	
+						// It was unchecked
+						else {
+							parent.setChecked( false );
+							refreshManualTreeItem( parent );
+							
+							InstrumentationPoint ip = (InstrumentationPoint)selectedItem.getData();
+							SourceFile sf = (SourceFile) parent.getData();
+							try {
+								_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE);
+							}
+							catch( IOException e ) {
+								
+								e.printStackTrace();
+							}
+							
+							refreshManualTreeItem( parent );
+							// Go through all the siblings
+							for( TreeItem i : parent.getItems() ) {
+	
+								// if comes to one that is checked make the root
+								// grayed
+								if( i.getChecked() ) {
+									parent.setChecked( true );
+									parent.setGrayed( true );
+									break;
+								}
 							}
 						}
 					}
@@ -796,15 +925,15 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			else {
 				// Selected item is a root file, disable fields not needed
 				if( selectedItem.getParentItem() == null ) {
-					disableInfoLabels();
+					disableManualInfoLabels();
 				}
 				else {
 					// Only enable fields when the selection is an Instrumentation Point
 					if( selectedItem.getData() instanceof InstrumentationPoint ) {
-						fillInfoLabels( (InstrumentationPoint)selectedItem.getData() );
+						fillManualInfoLabels( (InstrumentationPoint)selectedItem.getData() );
 					}
 					else
-						disableInfoLabels();
+						disableManualInfoLabels();
 				}
 			}
 		}
@@ -820,7 +949,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						i.revertToOriginalState( sf );
 					}
 					catch( IOException e ) {
-						// TODO Auto-generated catch block
+						
 						e.printStackTrace();
 					}
 				}
@@ -841,8 +970,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				else if( arg0.widget == _autoButton ) {
 					{
 						// There are Tree Items (Files)
-						if( _tree2.getItemCount() > 0 ) {
-							TreeItem[] items = _tree2.getItems();
+						if( _treeAuto.getItemCount() > 0 ) {
+							TreeItem[] items = _treeAuto.getItems();
 							//Go through each tree item
 							for( TreeItem tI : items){
 								//See if it's checked
@@ -870,8 +999,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// The Widget selected was a Combo box
 		else if( arg0.widget == _cmbType ) {
 			
-			// Look at the table item currently being editted.
-			TreeItem[] item = _tree.getSelection();
+			// Look at the tree item currently being editted.
+			TreeItem[] item = _treeManual.getSelection();
 			InstrumentationPoint point = (InstrumentationPoint)item[ 0 ].getData();
 
 			// If the selection differs from the model, raise a flag
@@ -888,20 +1017,20 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				}
 			}
 			
-			// If the modified flag is raised, the current tableitem has been changed so write out to xml
+			// If the modified flag is raised, the current treeitem has been changed so write out to xml
 			if( _modified ) {
 				_modified = false;
 				
 				SourceFile sf = (SourceFile) item[0].getParentItem().getData();
-				refreshTreeItem( item[0].getParentItem() );
+				refreshManualTreeItem( item[0].getParentItem() );
 				try {
 					_newFP.manipulateAnnotation( sf, point, Constants.ANNOTATION_UPDATE );
 				}
 				catch( IOException e ) {
-					// TODO Auto-generated catch block
+					
 					e.printStackTrace();
 				}
-				refreshTreeItem( item[0].getParentItem() );	
+				refreshManualTreeItem( item[0].getParentItem() );	
 			}
 		}
 		else if( arg0.widget == _sleepYield ) {
@@ -955,7 +1084,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_ach.writeXml();
 			}
 			catch( IOException e ) {
-				// TODO Auto-generated catch block
+				
 				e.printStackTrace();
 			}
 			_modified = false;
@@ -967,7 +1096,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * If the text is modified in a textbox set a flag
 	 */
 	public void modifyText( ModifyEvent e ) {
-		// TODO Auto-generated method stub
 		_modified = true;
 	}
 
@@ -987,7 +1115,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			InstrumentationPoint pointChanging = null;
 			if( e.widget != _txtAutoHigher && e.widget != _txtAutoLower ) {
 				// If it has been modified
-				selectedItem = _tree.getSelection();
+				selectedItem = _treeManual.getSelection();
 				pointChanging = (InstrumentationPoint)selectedItem[ 0 ].getData();
 			
 			
@@ -1019,20 +1147,84 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				if (temp == 0)
 					_ach.writeXml();
 				else{
-					refreshTreeItem( selectedItem[0].getParentItem() );
+					refreshManualTreeItem( selectedItem[0].getParentItem() );
 					SourceFile sf = (SourceFile) selectedItem[0].getParentItem().getData();
 					_newFP.manipulateAnnotation( sf, pointChanging, Constants.ANNOTATION_UPDATE );
-					refreshTreeItem( selectedItem[0].getParentItem() );
+					refreshManualTreeItem( selectedItem[0].getParentItem() );
 				}			
 			}
 			catch( IOException e1 ) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 			_modified = false;
 		}
 	}
 
+	/**
+	 * Takes the given tree item and changes it's status based on it's children items. Will change to
+	 * unchecked, checked, or grayed
+	 * @param item
+	 */
+	void verifyTreeItemParent(TreeItem item){
+		int count = 0;
+		Boolean siblingUnchecked = false;
+		Boolean grayed = false;
+		
+		//Go though all children
+		for (TreeItem i : item.getItems()){
+			if (i.getGrayed()){
+				grayed = true;
+				break;
+			}
+			// When hit a check increase count
+			if (i.getChecked() ){
+				count++;
+				
+				// There's been checked siblings and encountered and unchecked, exit because
+				// we already know it will be a grayed check
+				if (siblingUnchecked && count > 0)
+					break;
+				
+			}
+			
+			// Found an unchecked item
+			else
+				siblingUnchecked = true;
+		}
+		
+		if(grayed){
+			item.setGrayed(true);
+			item.setChecked(true);
+		}
+		// Has a checked item
+		else if (count > 0){
+			// Found an unchecked sibling
+			if (siblingUnchecked){
+				item.setGrayed(true);
+			}
+			// All must be checked
+			else{
+				item.setGrayed(false);
+				
+			}
+			item.setChecked(true);
+			
+		}
+		else{
+			item.setGrayed(false);
+			item.setChecked(false);
+		}
+		
+
+		//item.setChecked(false);
+		// Parent is not a tree
+		if (item.getParentItem() != null){
+			
+			verifyTreeItemParent(item.getParentItem());
+			
+		}
+
+	}
 	/**
 	 * Check the buttons in the Auto and Manual to see if they have the correct text to represent reverting
 	 * files or not.
