@@ -14,7 +14,10 @@ public class SourceFile {
 	private Path	_path				= null; // The abstract path name of this source file
 	private String	_name				= null; // The name of this source file
 	private String 	_packageAndImports	= null; // The string of the package and imports of the file
-
+	private int 	_lowerBound			= 0;	// The lower bound used when automatic instrumentation
+	private int 	_upperBound			= 100;	// The upper bound used when automatic instrumentation
+	
+	
 	// A collection of interest points for this source file
 	private ArrayList<InterestPoint> _interestingPoints = new ArrayList<InterestPoint>();
 
@@ -88,4 +91,38 @@ public class SourceFile {
 	public String getPackageAndImports() {
 		return _packageAndImports;
 	}
+	
+	/**
+	 * Sets the upper bound limit of Automatic Instrumentation
+	 * @param upper the upper bound for automatic instrumentation
+	 */
+	public void setUpperBound( int upper ) {
+		_upperBound = upper;
+	}
+	
+	/**
+	 * Sets the upper bound limit of Automatic Instrumentation
+	 * @param upper the upper bound for automatic instrumentation
+	 */
+	public int getUpperBound() {
+		return _upperBound;
+	}
+	
+	/**
+	 * Sets the lower bound limit of Automatic Instrumentation
+	 * @param lower the lower bound for automatic instrumentation
+	 */
+	public void setLowerBound( int lower ) {
+		_lowerBound = lower;
+	}
+	
+	/**
+	 * Sets the lower bound limit of Automatic Instrumentation
+	 * @param lower the lower bound for automatic instrumentation
+	 */
+	public int getLowerBound() {
+		return _lowerBound;
+	}
+	
+	
 }

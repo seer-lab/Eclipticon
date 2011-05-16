@@ -14,10 +14,14 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.custom.ControlEditor;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.TreeEvent;
@@ -47,6 +51,7 @@ import ca.uoit.eclipticon.gui.EditorHandler;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
 import ca.uoit.eclipticon.parsers.FileParser;
 import ca.uoit.eclipticon.parsers.PreParser;
+import ca.uoit.eclipticon.util.TreeCursor;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
 
@@ -481,7 +486,86 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_treeAuto.setLinesVisible( true );
 		_treeAuto.setHeaderVisible( true );
 		_treeAuto.addSelectionListener( this );
-			
+		
+		// create a TreeCursor to navigate around the tree
+ 		final TreeCursor cursor = new TreeCursor(_treeAuto, SWT.NONE);
+ 		// create an editor to edit the cell when the user hits "ENTER" 
+ 		// while over a cell in the tree
+ 		final ControlEditor editor = new ControlEditor(cursor);
+ 		editor.grabHorizontal = true;
+ 		editor.grabVertical = true;
+ 	
+ 		cursor.addSelectionListener(new SelectionAdapter() {
+ 			// when the TreeEditor is over a cell, select the corresponding row in 
+ 			// the tree
+ 			public void widgetSelected(SelectionEvent e) {
+ 				_treeAuto.setSelection(new TreeItem[] {cursor.getRow()});
+ 			}
+ 			// when the user hits "ENTER" in the TreeCursor, pop up a text editor so that 
+ 			// they can change the text of the cell
+ 			public void widgetDefaultSelected(SelectionEvent e){
+ 				int column = cursor.getColumn();
+ 				
+ 				if (column > 0){
+	 				final Text text = new Text(cursor, SWT.NONE);
+	 				TreeItem row = cursor.getRow();
+	 				
+	 				text.setText(row.getText(column));
+	 				text.addKeyListener(new KeyAdapter() {
+	 					public void keyPressed(KeyEvent e) {
+	 						// close the text editor and copy the data over 
+	 						// when the user hits "ENTER"
+	 						if (e.character == SWT.CR) {
+	 							TreeItem row = cursor.getRow();
+	 							int column = cursor.getColumn();
+	 							row.setText(column, text.getText());
+	 							text.dispose();
+	 						}
+	 						// close the text editor when the user hits "ESC"
+	 						if (e.character == SWT.ESC) {
+	 							text.dispose();
+	 						}
+	 					}
+	 				});
+	 				editor.setEditor(text);
+	 				text.setFocus();
+	 			}
+ 			}
+ 		});
+ 		// Hide the TreeCursor when the user hits the "MOD1" or "MOD2" key.
+ 		// This alows the user to select multiple items in the tree.
+ 		cursor.addKeyListener(new KeyAdapter() {
+ 			public void keyPressed(KeyEvent e) {
+ 				if (e.keyCode == SWT.MOD1 || 
+ 				    e.keyCode == SWT.MOD2 || 
+ 				    (e.stateMask & SWT.MOD1) != 0 || 
+ 				    (e.stateMask & SWT.MOD2) != 0) {
+ 					cursor.setVisible(false);
+ 				}
+ 			}
+ 		});
+ 		// Show the TreeCursor when the user releases the "MOD2" or "MOD1" key.
+ 		// This signals the end of the multiple selection task.
+ 		_treeAuto.addKeyListener(new KeyAdapter() {
+ 			public void keyReleased(KeyEvent e) {
+ 				if (e.keyCode == SWT.MOD1 && (e.stateMask & SWT.MOD2) != 0) return;
+ 				if (e.keyCode == SWT.MOD2 && (e.stateMask & SWT.MOD1) != 0) return;
+ 				if (e.keyCode != SWT.MOD1 && (e.stateMask & SWT.MOD1) != 0) return;
+ 				if (e.keyCode != SWT.MOD2 && (e.stateMask & SWT.MOD2) != 0) return;
+ 			
+ 				TreeItem[] selection = _treeAuto.getSelection();
+ 				TreeItem row = (selection.length == 0) ? _treeAuto.getItem(_treeAuto.indexOf(_treeAuto.getTopItem())) : selection[0];
+ 				_treeAuto.showItem(row);
+ 				cursor.setSelection(row, 0);
+ 				cursor.setVisible(true);
+ 				cursor.setFocus();
+ 			}
+ 		});
+		
+		
+		
+		
+		
 		// Default Button
 		_autoButton = new Button( groupSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
@@ -497,7 +581,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		tabAuto.setControl( composite );
 	}
 
-	/**
+	/*
 	 * Adjust the sliders positions to mimic the XML
 	 * 
 	 * @param autoConfig
@@ -558,15 +642,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						String[] tempStr = {currentSegment, "",""};
 						item.setText(tempStr);
 						parentItem = item;
-						
+						item.setChecked( true );
 					}
 					else if (parentItem instanceof Tree){
 						TreeItem item = new TreeItem((Tree) parentItem,SWT.NONE );
-						
 						String[] tempStr = {currentSegment, "",""};
-						
 						item.setText(tempStr);
 						parentItem = item;
+						item.setChecked( true );
 					}
 					
 				}	
@@ -982,6 +1065,21 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 										sf.clearInterestingPoints();
 										_newFP.findInterestPoints( sf );
 										
+										// set the lower and upper bound if it exists
+										try{
+											int lower = Integer.parseInt(tI.getText(1));
+											int higher = Integer.parseInt(tI.getText(2));
+											
+											if ( lower >= 0 && lower <= 100 && higher >= 0 && higher <= 100 && lower <= higher){
+												sf.setLowerBound(lower);
+												sf.setUpperBound(higher);
+											}
+										}
+										catch (Exception e) {
+											// TODO: handle exception
+										}
+										
+										
 										// Only instrument it if it has points worth looking at.
 										if( sf.getInterestingPoints().size() > 0 )
 											i.instrument( sf, true );
@@ -1241,7 +1339,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		}
 		_autoButton.pack();
 		_autoButton.redraw();
-		_autoButton.pack();
-		_autoButton.redraw();
+		_manualButton.pack();
+		_manualButton.redraw();
 	}
 }

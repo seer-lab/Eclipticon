@@ -1,5 +1,6 @@
 package ca.uoit.eclipticon.instrumentation;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,11 +9,13 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import javax.xml.transform.Source;
 
 import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.AutomaticConfiguration;
@@ -141,6 +144,7 @@ public class Instrumentor {
 	 */
 	public void instrument( SourceFile sourceFile, boolean automaticMode ) {
 
+				
 		// Get a buffer reader of this file
 		BufferedReader bufReader = null;
 		try {
@@ -161,7 +165,8 @@ public class Instrumentor {
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		String currentLine = ""; // The current line's value
 		int lineNum = 1; // The current line number
-
+		
+		
 		// Make the arraylists to hold the points
 		ArrayList<InterestPoint> interestingPoints = sourceFile.getInterestingPoints();
 		ArrayList<InstrumentationPoint> instrPoints = new ArrayList<InstrumentationPoint>();
@@ -169,7 +174,7 @@ public class Instrumentor {
 		// If automatic mode is used get the instrumentation Points using automatic configuration (automatic overwrites
 		// manual)
 		if( automaticMode ) {
-			instrPoints = getAutomaticInstrumentationPoints( interestingPoints );
+			instrPoints = getAutomaticInstrumentationPoints( interestingPoints, sourceFile );
 		}
 		else { // Manual instrumentation is occurring
 
@@ -250,7 +255,7 @@ public class Instrumentor {
 	 * @return arraylist of instrumentation points
 	 */
 	private ArrayList<InstrumentationPoint> getAutomaticInstrumentationPoints(
-			ArrayList<InterestPoint> interestingPoints ) {
+			ArrayList<InterestPoint> interestingPoints, SourceFile sourceFile ) {
 
 		AutomaticConfigurationHandler configurationHandler = new AutomaticConfigurationHandler();
 
@@ -260,6 +265,27 @@ public class Instrumentor {
 		catch( FileNotFoundException e ) {
 			e.printStackTrace();
 		}
+		
+        int lineCount = 0;
+
+		// Get the line count
+	    try {
+	    	InputStream is = new BufferedInputStream(new FileInputStream(sourceFile.getPath().toString()));
+	        byte[] c = new byte[1024];
+	        int readChars = 0;
+	        while ((readChars = is.read(c)) != -1) {
+	            for (int i = 0; i < readChars; ++i) {
+	                if (c[i] == '\n')
+	                    ++lineCount;
+	            }
+	        }
+	        is.close();
+	    } catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+	    }
+		
+		
 
 		AutomaticConfiguration configuration = configurationHandler.getConfiguration();
 
@@ -277,37 +303,40 @@ public class Instrumentor {
 		Random rand = new Random();
 
 		for( InterestPoint interestPoint : interestingPoints ) {
-
-			// Figure out the type of noise to use
-			int type = 0;
-			if( rand.nextInt( 100 ) <= sleepProbability ) {
-				type = Constants.NOISE_SLEEP;
+			// Make sure the line is in the specified region
+			if (interestPoint.getLine() >= (sourceFile.getLowerBound()/100)*lineCount && interestPoint.getLine() <= (sourceFile.getUpperBound()/100)*lineCount){
+			
+				// Figure out the type of noise to use
+				int type = 0;
+				if( rand.nextInt( 100 ) <= sleepProbability ) {
+					type = Constants.NOISE_SLEEP;
+				}
+				else {
+					type = Constants.NOISE_YIELD;
+				}
+	
+				// Figure out the probability of instrumenting given the type of the construct
+				int probability = 0;
+				String construct = interestPoint.getConstruct();
+	
+				if( construct.equals( Constants.SYNCHRONIZE ) ) {
+					probability = synchronizeProbability;
+				}
+				else if( construct.equals( Constants.BARRIER ) ) {
+					probability = barrierProbability;
+				}
+				else if( construct.equals( Constants.LATCH ) ) {
+					probability = latchProbability;
+				}
+				else if( construct.equals( Constants.SEMAPHORE ) ) {
+					probability = semaphoreProbability;
+				}
+	
+				// Add the newly made instrumentation point
+				instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(),
+						interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange,
+						highDelayRange ) );
 			}
-			else {
-				type = Constants.NOISE_YIELD;
-			}
-
-			// Figure out the probability of instrumenting given the type of the construct
-			int probability = 0;
-			String construct = interestPoint.getConstruct();
-
-			if( construct.equals( Constants.SYNCHRONIZE ) ) {
-				probability = synchronizeProbability;
-			}
-			else if( construct.equals( Constants.BARRIER ) ) {
-				probability = barrierProbability;
-			}
-			else if( construct.equals( Constants.LATCH ) ) {
-				probability = latchProbability;
-			}
-			else if( construct.equals( Constants.SEMAPHORE ) ) {
-				probability = semaphoreProbability;
-			}
-
-			// Add the newly made instrumentation point
-			instrPoints.add( new InstrumentationPoint( interestPoint.getLine(), interestPoint.getSequence(),
-					interestPoint.getConstruct(), interestPoint.getConstructSyntax(), type, probability, lowDelayRange,
-					highDelayRange ) );
 		}
 		return instrPoints;
 	}
