@@ -15,7 +15,13 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.regex.Matcher;
 
-import javax.xml.transform.Source;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 
 import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.AutomaticConfiguration;
@@ -79,19 +85,28 @@ public class Instrumentor {
 	 */
 	private void printFile( String instrumentedCode, String filePath ) throws IOException {
 
-		// Create the file name for the instrumented file
-		String fileName = ( filePath );
-
 		// Write the fileContent to the new file
 		FileWriter fw = null;
 		try {
-			fw = new FileWriter( fileName );
+			fw = new FileWriter( filePath );
 			fw.write( instrumentedCode );
 		}
 		finally { // Close the writer
 			if( fw != null ) {
 				fw.flush();
 				fw.close();
+			}
+			
+			// Get the local file then refresh the copy
+			IWorkspace workspace = ResourcesPlugin.getWorkspace();
+			IWorkspaceRoot root = workspace.getRoot();
+
+		
+			try {
+				root.refreshLocal(IResource.DEPTH_INFINITE, null);
+			} catch (CoreException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 	}
@@ -131,6 +146,19 @@ public class Instrumentor {
 					destination.close();
 				}
 				backupFile.delete();
+				
+
+				// Get the local file then refresh the copy
+				IWorkspace workspace = ResourcesPlugin.getWorkspace();
+				IWorkspaceRoot root = workspace.getRoot();
+			
+				
+				try {
+					root.refreshLocal(IResource.DEPTH_INFINITE, null);
+				} catch (CoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 	}
@@ -304,7 +332,9 @@ public class Instrumentor {
 
 		for( InterestPoint interestPoint : interestingPoints ) {
 			// Make sure the line is in the specified region
-			if (interestPoint.getLine() >= (sourceFile.getLowerBound()/100)*lineCount && interestPoint.getLine() <= (sourceFile.getUpperBound()/100)*lineCount){
+			double lowerCount = ((double) sourceFile.getLowerBound())/100*lineCount;
+			double higherCount = ((double) sourceFile.getUpperBound())/100*lineCount;
+			if ((interestPoint.getLine() >= lowerCount) && (interestPoint.getLine() <= higherCount)){
 			
 				// Figure out the type of noise to use
 				int type = 0;
