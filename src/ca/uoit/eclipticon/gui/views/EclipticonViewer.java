@@ -498,12 +498,20 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
  		final ControlEditor editor = new ControlEditor(cursor);
  		editor.grabHorizontal = true;
  		editor.grabVertical = true;
- 	
+ 
+ 		// Activate the 
  		cursor.addSelectionListener(new SelectionAdapter() {
  			// when the TreeEditor is over a cell, select the corresponding row in 
  			// the tree
  			public void widgetSelected(SelectionEvent e) {
- 				_treeAuto.setSelection(new TreeItem[] {cursor.getRow()});
+ 				int column = cursor.getColumn();
+ 				if (column > 0){
+ 					cursor.setVisible(true);
+ 					_treeAuto.setSelection(new TreeItem[] {cursor.getRow()});
+ 				}
+ 				else{
+ 					cursor.setVisible(false);
+ 				}
  			}
  			// when the user hits "ENTER" in the TreeCursor, pop up a text editor so that 
  			// they can change the text of the cell
@@ -536,6 +544,27 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 			}
  			}
  		});
+ 		
+ 		//
+ 		
+ 		cursor.addFocusListener( new FocusListener() {
+			
+			@Override
+			public void focusLost(FocusEvent e) {
+				// TODO Auto-generated method stub
+				int column = cursor.getColumn();
+				e.getSource();
+				if (column == 0){
+					cursor.setVisible(true);
+				}
+			}
+			
+			@Override
+			public void focusGained(FocusEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
  		// Hide the TreeCursor when the user hits the "MOD1" or "MOD2" key.
  		// This alows the user to select multiple items in the tree.
  		cursor.addKeyListener(new KeyAdapter() {
@@ -566,9 +595,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
  			}
  		});
 		
-		
-		
-		
+ 		
 		
 		// Default Button
 		_autoButton = new Button( groupSettings, SWT.NULL );
@@ -585,6 +612,9 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		tabAuto.setControl( composite );
 	}
 
+	
+	
+	
 	/*
 	 * Adjust the sliders positions to mimic the XML
 	 * 
@@ -830,9 +860,10 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	
 	/**
 	 * Instrument the Tree Item in the Manual Tab specified
-	 * @param item
+	 * @param item The Tree Item to Instrument
+	 * @param refreshWorkspace Refresh the workspace after uninstrumentation
 	 */
-	private void instrumentManualTreeItem(TreeItem item){
+	private void instrumentManualTreeItem(TreeItem item, boolean refreshWorkspace){
 		refreshManualTreeItem( item.getParentItem() );
 		
 		// Create annotation
@@ -840,7 +871,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.NOISE_YIELD, 100, 0, 1000);
 		SourceFile sf = (SourceFile)item.getParentItem().getData();
 		try {
-			_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD);
+			_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD, refreshWorkspace);
 		}
 		catch( IOException e ) {
 	
@@ -851,15 +882,16 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	
 	/**
 	 * Uninstrument the Tree Item in the Manual Tab specified
-	 * @param item
+	 * @param item The Tree Item to Uninstrument
+	 * @param refreshWorkspace Refresh the workspace after uninstrumentation
 	 */
-	private void uninstrumentManualTreeItem(TreeItem item){
+	private void uninstrumentManualTreeItem(TreeItem item, boolean refreshWorkspace){
 		refreshManualTreeItem( item.getParentItem() );
 		
 		InstrumentationPoint ip = (InstrumentationPoint)item.getData();
 		SourceFile sf = (SourceFile) item.getParentItem().getData();
 		try {
-			_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE);
+			_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE, refreshWorkspace);
 		}
 		catch( IOException e ) {
 			
@@ -903,11 +935,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				i.setChecked(false);
 			}
 			
-			// If it comes to a sibling that isn't selected the root is grayed
-//			if( !i.getChecked() ) {
-//				parent.setGrayed( true );
-//				
-//			}
 		}
 	}
 
@@ -932,8 +959,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 * @param item
 	 */
 	void updateChildrenItems(TreeItem item){
-		
-	
+
 		// Make all it's children the same check status
 		if( item.getItemCount() > 0 ) {
 			for( TreeItem i : item.getItems() ) {
@@ -962,11 +988,14 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			if( arg0.detail == SWT.CHECK ) {
 				
 				// If it is grayed, make it checked
+				// All Trees
 				if( selectedItem.getGrayed() ) {
 					selectedItem.setChecked( true );
 					selectedItem.setGrayed( false );
 				}
 				
+				
+				// If it is in the Auto Tree, just handle the check marks
 				if (selectedItem.getParent() == _treeAuto){
 
 					//Recursively update children
@@ -977,25 +1006,41 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 					if (item != null)
 						verifyTreeItemParent(item);
 				}
-				
+							
+				// If it is in the Manual Tree, handle the check marks
+				// and the instrumentation as well
 				else{
 					
 					// The selection was at the root (File Names)
 					if( selectedItem.getParentItem() == null ) {
 						
-						// Make all it's children the same check status
-						if( selectedItem.getItemCount() > 0 ) {
+						int itemCount = selectedItem.getItemCount();
+						int currentCount = 0;
+						
+						// Make all it's children the same check status and instrument them where needed
+						if( itemCount > 0 ) {
+							
 							
 							for( TreeItem i : selectedItem.getItems() ) {
 								
 								refreshManualTreeItem(selectedItem);
 								
+								currentCount++;
+								
+								// Only (un)instrument if the check mark is changing
 								if (i.getChecked() != selectedItem.getChecked()){
+									
+									boolean refresh = false;
+									
+									if (currentCount == itemCount)
+										refresh = true;
+									
 									if (selectedItem.getChecked()){
-										instrumentManualTreeItem(i);
+										instrumentManualTreeItem(i, refresh);
 									}
 									else
-										uninstrumentManualTreeItem(i);
+										uninstrumentManualTreeItem(i, refresh);
+									
 								}
 								
 							}
@@ -1004,7 +1049,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 						
 					}
 					
-					// but if the selection was not at the root (Line numbers)
+					// If the Selection was at the line level (instrumentation point)
 					else {
 	
 						// Get it's root item (File Name)
@@ -1012,13 +1057,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	
 						// Check to see if it was checked or unchecked
 						if( selectedItem.getChecked() ) {
-							instrumentManualTreeItem(selectedItem);
+							instrumentManualTreeItem(selectedItem, true);
 						}
 	
 						// It was unchecked
 						else {
 							parent.setChecked( false );
-							uninstrumentManualTreeItem(selectedItem);
+							uninstrumentManualTreeItem(selectedItem, true);
 						}
 						
 						verifyTreeItemParent(parent);
@@ -1026,6 +1071,8 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 					}
 				}
 			}
+			
+			// The tree item selected was not the checkmark, the tree item itself
 			else {
 				// Selected item is a root file, disable fields not needed
 				if( selectedItem.getParentItem() == null ) {
@@ -1041,6 +1088,9 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				}
 			}
 		}
+		
+		
+		
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
 			Instrumentor i = new Instrumentor();
@@ -1121,7 +1171,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				SourceFile sf = (SourceFile) item[0].getParentItem().getData();
 				refreshManualTreeItem( item[0].getParentItem() );
 				try {
-					_newFP.manipulateAnnotation( sf, point, Constants.ANNOTATION_UPDATE );
+					_newFP.manipulateAnnotation( sf, point, Constants.ANNOTATION_UPDATE, true );
 				}
 				catch( IOException e ) {
 					
@@ -1246,7 +1296,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				else{
 					refreshManualTreeItem( selectedItem[0].getParentItem() );
 					SourceFile sf = (SourceFile) selectedItem[0].getParentItem().getData();
-					_newFP.manipulateAnnotation( sf, pointChanging, Constants.ANNOTATION_UPDATE );
+					_newFP.manipulateAnnotation( sf, pointChanging, Constants.ANNOTATION_UPDATE, true);
 					refreshManualTreeItem( selectedItem[0].getParentItem() );
 				}			
 			}

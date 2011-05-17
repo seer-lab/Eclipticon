@@ -10,6 +10,7 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
@@ -495,7 +496,7 @@ public class FileParser {
 		return backupExists;
 	}
 
-	public void manipulateAnnotation( SourceFile sourceFile, InstrumentationPoint instrumentationPoint, int deleteUpdateAdd ) throws IOException {
+	public void manipulateAnnotation( SourceFile sourceFile, InstrumentationPoint instrumentationPoint, int deleteUpdateAdd, boolean updateWorkspace ) throws IOException {
 		
 		StringBuffer fileContents = new StringBuffer(); // The new file with the instrumentation
 		FileReader fileReader = null;
@@ -568,17 +569,28 @@ public class FileParser {
 				fw.close();
 			}
 			
-			// Get the local file then refresh the copy
-			IWorkspace workspace = ResourcesPlugin.getWorkspace();
-			IWorkspaceRoot root = workspace.getRoot();
+			// If the workspace is to be refreshed, refresh it.
+			if ( updateWorkspace ){
+				
+				// Get the local file then refresh the copy
+				IWorkspace workspace = ResourcesPlugin.getWorkspace();
+				IWorkspaceRoot root = workspace.getRoot();
 
-			
-			try {
-				root.refreshLocal(IResource.DEPTH_INFINITE, null);
-			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try {
+					
+					// Refresh the single file
+					IPath relativePath = sourceFile.getPath().makeRelativeTo(root.getLocation());
+					IFile fileRefresh = root.getFile(relativePath);
+					fileRefresh.refreshLocal(IResource.DEPTH_ZERO, null);
+					
+					
+				} catch (CoreException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
 			}
+			
 		}
 	}
 }
