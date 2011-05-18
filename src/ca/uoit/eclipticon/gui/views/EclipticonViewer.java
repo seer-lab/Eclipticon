@@ -1,14 +1,14 @@
 package ca.uoit.eclipticon.gui.views;
 
+import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.viewers.ISelection;
@@ -35,13 +35,20 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.DirectoryDialog;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.List;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Scale;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
+import org.eclipse.ui.PlatformUI;
 
 import ca.uoit.eclipticon.Constants;
 import ca.uoit.eclipticon.data.AutomaticConfiguration;
@@ -61,8 +68,19 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	Composite						_compositeParent	= null;
 	Composite						_compositePoints	= null;
+	
+	// Test Tab Variables
 	CTabFolder						_folderTab			= null;
-
+	Text 							_folderTxt			= null;
+	Text 							_executionTxt		= null;
+	Text 							_normalizationTxt	= null;
+	
+	Table							_resultsTable		= null;
+	Combo							_executionCombo		= null;
+	Combo							_normalizationCombo	= null;
+	Button							_testButton			= null;
+	List 							_fileList 			= null;	
+	//
 	Text							_txtLower			= null;
 	Text							_txtHigher			= null;
 	Text							_txtProb			= null;
@@ -82,9 +100,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	Tree							_treeManual			= null;
 	Tree							_treeAuto			= null;
 	Boolean							_modified			= false;
+	
+	
 	AutomaticConfigurationHandler	_ach				= null;
 	FileParser						_newFP				= null;
 	Path							_workspacePath		= null;
+
+	Boolean							_testing			= true;
 
 	public EclipticonViewer( Composite parent, int i ) {
 		super();
@@ -105,9 +127,11 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_folderTab = new CTabFolder( _compositePoints, SWT.NULL );
 		_folderTab.setTabPosition( SWT.TOP );
 
-		// Create and populate the Two tabs
+		// Create and populate the Three tabs
 		createManualTab( _folderTab );
 		createAutoTab( _folderTab );
+		createTestTab( _folderTab );
+		
 		disableManualInfoLabels();
 		fillTree();
 		// Initialize the models
@@ -170,7 +194,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// Create the Tab and insert it into the TabFolder
 		CTabItem tabManual = new CTabItem( tabFolder, SWT.NULL );
 		tabManual.setText( "Manual" );
-
+		
 		Composite composite = new Composite( tabFolder, SWT.NULL );
 		GridData gridData = new GridData( GridData.FILL_BOTH );
 		composite.setLayoutData( gridData );
@@ -612,7 +636,211 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		tabAuto.setControl( composite );
 	}
 
+	/**
+	 * Create's the Testing Tab
+	 * 
+	 * @param tabFolder
+	 * @return
+	 */
+	private void createTestTab( CTabFolder tabFolder ) {
+
+		// Create the Tab and insert it into the TabFolder
+		CTabItem tabTesting = new CTabItem( tabFolder, SWT.NULL );
+		tabTesting.setText( "Testing" );
+
+		Composite composite = new Composite( tabFolder, SWT.NULL );
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		composite.setLayoutData( gridData );
+		GridLayout gridLayout = new GridLayout();
+		composite.setLayout( gridLayout );
+
+
+		// Create a Section for the settings
+		Group groupSettings = new Group( composite, SWT.NULL );
+		gridData = new GridData( GridData.FILL_HORIZONTAL );
+		gridData.minimumWidth = 400;
+		groupSettings.setLayoutData( gridData );
+
+		groupSettings.setText( "Settings" );
+		gridLayout = new GridLayout( 2, false );
+		groupSettings.setLayout( gridLayout );
+
+		// The Folder Label
+		Label typeLbl = new Label( groupSettings, SWT.NULL );
+		gridData = new GridData(GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING );
+		gridData.horizontalSpan=2;
+		typeLbl.setLayoutData( gridData );
+		typeLbl.setText( "Test Folder:" );
+
+		
+		// The Folder Path text
+		_folderTxt= new Text( groupSettings, SWT.BORDER );
+		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
+		_folderTxt.setLayoutData( gridData );
+
+		// Browse Button
+		Button folderButton = new Button(groupSettings, SWT.PUSH);
+		gridData = new GridData();
+		folderButton.setLayoutData(gridData);
+	    folderButton.setText("Browse");
+	    folderButton.addSelectionListener(new SelectionAdapter() {
+	      public void widgetSelected(SelectionEvent e) {
+	        DirectoryDialog dialog = new DirectoryDialog( PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),SWT.OPEN);
+	        File folder = new File(_folderTxt.getText());
+	        
+	        if (folder.isDirectory())
+	        	dialog.setFilterPath(folder.getAbsolutePath());
+	        
+	        String path = dialog.open();
+	        
+	        if (path != null) {
+	          File file = new File(path);
+	          if (!file.isFile()){
+	        	  _folderTxt.setText(file.getAbsolutePath());
+	        	  _fileList.setData(file);
+	        	  
+	        	  // Look at files!!
+	        	  FileFilter filter = new FileFilter() {
+					
+					@Override
+					public boolean accept(File pathname) {
+						Path path = new Path(pathname.getAbsolutePath());
+						String extension = path.getFileExtension();
+						if (extension.compareTo(Constants.EXTENSION_TEST_IN) == 0 || extension.compareTo(Constants.EXTENSION_TEST_EXP) == 0 )
+							return true;
+						else
+							return false;
+					}
+				};
+				_fileList.removeAll();
+				File [] files =  file.listFiles(filter);
+				String [] fileStrings = new String [files.length];
+				
+				for ( int i = 0; i < files.length; i++)
+					fileStrings[i] = files[i].getName();
+					
+				java.util.Arrays.sort(fileStrings);	
+				
+	        	_fileList.setItems(fileStrings);
+	          }
+	        }
+	      }
+	    });    
+	    
+	    
+	    // List to display files
+	    
+	    _fileList = new List (groupSettings, SWT.BORDER | SWT.V_SCROLL);
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_CENTER | GridData.FILL_HORIZONTAL );
+		gridData.heightHint = 150;
+		gridData.minimumWidth = 150;
+		gridData.horizontalSpan = 2;
+		_fileList .setLayoutData(gridData);
+		
+		_fileList .addListener (SWT.DefaultSelection, new Listener () {
+			public void handleEvent (Event e) {
+				if (_fileList.getData() instanceof File){
+					File directory = (File) _fileList.getData();
+//					String pathString = directory.getAbs
+					Path path = new Path(directory.getAbsolutePath());
+					String[] selection = _fileList.getSelection();
+					if (_fileList.getSelectionCount() > 0){
+						path = (Path) path.append(selection[0]);
+						EditorHandler eH = new EditorHandler();
+						eH.openFile(path);
+					}
+				}
+				
+				
+			}
+		});
+		
+		
+		// The Execution Parameters
+		Composite compositeSettings = new Composite( groupSettings, SWT.NULL );
+		gridData = new GridData( GridData.FILL_HORIZONTAL  | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING);
+		gridData.horizontalSpan = 2;
+		
+		compositeSettings.setLayoutData( gridData );
+		gridLayout = new GridLayout(3, false);
+		compositeSettings.setLayout( gridLayout );
+		
+		// Label for Execution
+		Label executionLbl = new Label( compositeSettings, SWT.NULL );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
+		executionLbl.setLayoutData( gridData );
+		executionLbl.setText( "Test Execution:" );
+		
+		// The Execution Text	
+		_executionTxt= new Text( compositeSettings, SWT.BORDER );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.FILL_HORIZONTAL  );
+		gridData.minimumWidth = 50;
+		_executionTxt.setLayoutData( gridData );
+
+		
+		// Execution Combo
+		_executionCombo = new Combo( compositeSettings, SWT.NULL );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
+		gridData.widthHint = 95;
+
+		_executionCombo.setLayoutData( gridData );
+		_executionCombo.add( "Seconds" );
+		_executionCombo.add( "Minutes" );
+		_executionCombo.add( "Times" );
+		_executionCombo.select( 1 );
+
+
+		// Label for Execution
+		Label normalizationLbl = new Label( compositeSettings, SWT.NULL );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
+		normalizationLbl.setLayoutData( gridData );
+		normalizationLbl.setText( "Test Normalization:" );
+
+		// Combo for Normalization
+		_normalizationCombo = new Combo( compositeSettings, SWT.NULL );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.FILL_HORIZONTAL );
+		gridData.horizontalSpan =2;
+		gridData.minimumWidth = 50;
+		_normalizationCombo.setLayoutData( gridData );
+		_normalizationCombo.add( "None" );
+		_normalizationCombo.add( "Sort" );
+		_normalizationCombo.select( 0 );
+
+		
+		// Test Button
+		_testButton = new Button( composite, SWT.NULL );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
 	
+		_testButton.setLayoutData( gridData );
+		_testButton.setText("Run Tests");
+		
+		// Label for Execution
+		Label resultsLbl = new Label( composite, SWT.NULL );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
+		resultsLbl.setLayoutData( gridData );
+		resultsLbl.setText( "Test Results:" );
+		
+		// Results Table
+		_resultsTable = new Table( composite, SWT.BORDER);
+		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_CENTER );
+		gridData.heightHint = 150;		
+		_resultsTable.setLayoutData( gridData );
+		
+		_resultsTable.setHeaderVisible(true);
+		_resultsTable.setLinesVisible(true);
+		
+		TableColumn testCol = new TableColumn(_resultsTable, SWT.NONE);
+		testCol.setText("Test Name");
+		testCol.pack();
+		
+		TableColumn resultsCol = new TableColumn(_resultsTable, SWT.NONE);
+		resultsCol.setText("Results");
+		resultsCol.pack();
+		
+		_resultsTable.setEnabled(false);
+
+		tabTesting.setControl( composite );
+	}
 	
 	
 	/*
@@ -1093,54 +1321,57 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
-			Instrumentor i = new Instrumentor();
-			ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
-			
-			// Revert Files instead of instrumenting them
-			if( _newFP.checkIfBackupExists( _workspacePath ) ) {
+			if (_testing)
+				createTestTab(_folderTab);
+			else{
+				Instrumentor i = new Instrumentor();
+				ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
 				
-				setButtonsInstrument(true);
-				for( SourceFile sf : sources ) {
-					try {
-						i.revertToOriginalState( sf );
-					}
-					catch( IOException e ) {
-						
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			// Instrument the files
-			else {
-				setButtonsInstrument(false);
-				// Manual Instrumentation
-				if( arg0.widget == _manualButton ) {
+				// Revert Files instead of instrumenting them
+				if( _newFP.checkIfBackupExists( _workspacePath ) ) {
+					
+					setButtonsInstrument(true);
 					for( SourceFile sf : sources ) {
-						sf.clearInterestingPoints();
-						_newFP.findInterestPoints( sf );
-						i.instrument( sf, false );
-					}
-				}
-				
-				// Automatic Instrumentation
-				else if( arg0.widget == _autoButton ) {
-					{
-						// There are Tree Items (Files)
-						if( _treeAuto.getItemCount() > 0 ) {
-							TreeItem[] items = _treeAuto.getItems();
-							//Go through each top tree item
-							for( TreeItem tI : items){
-								
-								// Recursively Instrument the tree item 
-								instrumentAutoTreeItem(tI);
-							}
+						try {
+							i.revertToOriginalState( sf );
+						}
+						catch( IOException e ) {
+							
+							e.printStackTrace();
 						}
 					}
 				}
-			}		
-			//Make sure the buttons are correctly labeled.
-			//checkButtons();
+				
+				// Instrument the files
+				else {
+					setButtonsInstrument(false);
+					// Manual Instrumentation
+					if( arg0.widget == _manualButton ) {
+						for( SourceFile sf : sources ) {
+							sf.clearInterestingPoints();
+							_newFP.findInterestPoints( sf );
+							i.instrument( sf, false );
+						}
+					}
+					
+					// Automatic Instrumentation
+					else if( arg0.widget == _autoButton ) {
+						{
+							// There are Tree Items (Files)
+							if( _treeAuto.getItemCount() > 0 ) {
+								TreeItem[] items = _treeAuto.getItems();
+								//Go through each top tree item
+								for( TreeItem tI : items){
+									
+									// Recursively Instrument the tree item 
+									instrumentAutoTreeItem(tI);
+								}
+							}
+						}
+					}
+				}		
+	
+			}
 		}
 
 		// The Widget selected was a Combo box

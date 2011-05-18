@@ -68,6 +68,9 @@ public final class Constants {
 	/** These are the file extension types used */
 	static public String	EXTENSION_ECLIPTICON				= ".eclipticon";
 	static public String	EXTENSION_JAVA						= ".java";
+	static public String	EXTENSION_TEST_IN					= "in";
+	static public String	EXTENSION_TEST_EXP					= "exp";
+	static public String	EXTENSION_TEST_OUT					= "out";
 	
 	/** The file writer's buffer size */
 	static public int		BUFFER_SIZE 						= 127;
