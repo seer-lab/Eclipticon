@@ -4,13 +4,17 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
@@ -37,13 +41,16 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
@@ -60,6 +67,7 @@ import ca.uoit.eclipticon.gui.EditorHandler;
 import ca.uoit.eclipticon.instrumentation.Instrumentor;
 import ca.uoit.eclipticon.parsers.FileParser;
 import ca.uoit.eclipticon.parsers.PreParser;
+import ca.uoit.eclipticon.util.Tester;
 import ca.uoit.eclipticon.util.TreeCursor;
 
 public class EclipticonViewer extends Viewer implements SelectionListener, ModifyListener, FocusListener {
@@ -68,19 +76,29 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	Composite						_compositeParent	= null;
 	Composite						_compositePoints	= null;
-	
+
 	// Test Tab Variables
 	CTabFolder						_folderTab			= null;
-	Text 							_folderTxt			= null;
-	Text 							_executionTxt		= null;
-	Text 							_normalizationTxt	= null;
-	
+	Text							_execTxt			= null;
+	Text							_folderTxt			= null;
+	Text							_executionTxt		= null;
+	Text							_normalizationTxt	= null;
+
 	Table							_resultsTable		= null;
 	Combo							_executionCombo		= null;
 	Combo							_normalizationCombo	= null;
+	Button							_folderButton		= null;
 	Button							_testButton			= null;
-	List 							_fileList 			= null;	
-	//
+	List							_fileList			= null;
+	ProgressBar						_testProgress		= null;
+
+	File							_testingFolder		= null;
+	File							_execFile			= null;
+	int								_numberTested		= 0;
+
+	int								_numberExecution	= 1;
+
+	// Manual and Auto Variables
 	Text							_txtLower			= null;
 	Text							_txtHigher			= null;
 	Text							_txtProb			= null;
@@ -100,13 +118,12 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	Tree							_treeManual			= null;
 	Tree							_treeAuto			= null;
 	Boolean							_modified			= false;
-	
-	
+
 	AutomaticConfigurationHandler	_ach				= null;
 	FileParser						_newFP				= null;
 	Path							_workspacePath		= null;
 
-	Boolean							_testing			= true;
+	Boolean							_testing			= false;
 
 	public EclipticonViewer( Composite parent, int i ) {
 		super();
@@ -131,7 +148,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		createManualTab( _folderTab );
 		createAutoTab( _folderTab );
 		createTestTab( _folderTab );
-		
+
 		disableManualInfoLabels();
 		fillTree();
 		// Initialize the models
@@ -141,7 +158,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		try {
 			// Read in their XML's
 			_ach.readXml();
-			
+
 			// Populate the tree and the Auto Tab
 			populateAutoTab( _ach.getConfiguration() );
 
@@ -149,7 +166,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 		}
 		catch( FileNotFoundException e ) {
-			
+
 			e.printStackTrace();
 		}
 
@@ -179,7 +196,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtAutoHigher.addModifyListener( this );
 
 		checkButtons();
-		
+
 		return _compositePoints;
 	}
 
@@ -194,7 +211,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// Create the Tab and insert it into the TabFolder
 		CTabItem tabManual = new CTabItem( tabFolder, SWT.NULL );
 		tabManual.setText( "Manual" );
-		
+
 		Composite composite = new Composite( tabFolder, SWT.NULL );
 		GridData gridData = new GridData( GridData.FILL_BOTH );
 		composite.setLayoutData( gridData );
@@ -209,7 +226,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		TreeColumn col2 = new TreeColumn( _treeManual, SWT.LEFT );
 		col2.setText( "Type" );
 		col2.setWidth( 100 );
-		
+
 		TreeColumn col3 = new TreeColumn( _treeManual, SWT.LEFT );
 		col3.setText( "Syntax" );
 		col3.setWidth( 100 );
@@ -226,13 +243,13 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 			@Override
 			public void treeCollapsed( TreeEvent e ) {
-		
+
 				_treeManual.getColumn( 0 ).pack();
 			}
 
 			@Override
 			public void treeExpanded( TreeEvent e ) {
-				
+
 				_treeManual.getColumn( 0 ).pack();
 			}
 
@@ -501,137 +518,137 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		TreeColumn col1 = new TreeColumn( _treeAuto, SWT.LEFT );
 		TreeColumn col2 = new TreeColumn( _treeAuto, SWT.LEFT );
 		TreeColumn col3 = new TreeColumn( _treeAuto, SWT.LEFT );
-		
+
 		col1.setText( "Files to be Instrumented" );
-		col1.setWidth(300 );
-		
+		col1.setWidth( 300 );
+
 		col2.setText( "Lower Bound" );
-		col2.setWidth(100 );
-		
+		col2.setWidth( 100 );
+
 		col3.setText( "Upper Bound" );
 		col3.setWidth( 100 );
-		
+
 		_treeAuto.setLinesVisible( true );
 		_treeAuto.setHeaderVisible( true );
 		_treeAuto.addSelectionListener( this );
-		
+
 		// create a TreeCursor to navigate around the tree
- 		final TreeCursor cursor = new TreeCursor(_treeAuto, SWT.NONE);
- 		// create an editor to edit the cell when the user hits "ENTER" 
- 		// while over a cell in the tree
- 		final ControlEditor editor = new ControlEditor(cursor);
- 		editor.grabHorizontal = true;
- 		editor.grabVertical = true;
- 
- 		// Activate the 
- 		cursor.addSelectionListener(new SelectionAdapter() {
- 			// when the TreeEditor is over a cell, select the corresponding row in 
- 			// the tree
- 			public void widgetSelected(SelectionEvent e) {
- 				int column = cursor.getColumn();
- 				if (column > 0){
- 					cursor.setVisible(true);
- 					_treeAuto.setSelection(new TreeItem[] {cursor.getRow()});
- 				}
- 				else{
- 					cursor.setVisible(false);
- 				}
- 			}
- 			// when the user hits "ENTER" in the TreeCursor, pop up a text editor so that 
- 			// they can change the text of the cell
- 			public void widgetDefaultSelected(SelectionEvent e){
- 				int column = cursor.getColumn();
- 				
- 				if (column > 0){
-	 				final Text text = new Text(cursor, SWT.NONE);
-	 				TreeItem row = cursor.getRow();
-	 				
-	 				text.setText(row.getText(column));
-	 				text.addKeyListener(new KeyAdapter() {
-	 					public void keyPressed(KeyEvent e) {
-	 						// close the text editor and copy the data over 
-	 						// when the user hits "ENTER"
-	 						if (e.character == SWT.CR) {
-	 							TreeItem row = cursor.getRow();
-	 							int column = cursor.getColumn();
-	 							row.setText(column, text.getText());
-	 							text.dispose();
-	 						}
-	 						// close the text editor when the user hits "ESC"
-	 						if (e.character == SWT.ESC) {
-	 							text.dispose();
-	 						}
-	 					}
-	 				});
-	 				editor.setEditor(text);
-	 				text.setFocus();
-	 			}
- 			}
- 		});
- 		
- 		//
- 		
- 		cursor.addFocusListener( new FocusListener() {
-			
+		final TreeCursor cursor = new TreeCursor( _treeAuto, SWT.NONE );
+		// create an editor to edit the cell when the user hits "ENTER" 
+		// while over a cell in the tree
+		final ControlEditor editor = new ControlEditor( cursor );
+		editor.grabHorizontal = true;
+		editor.grabVertical = true;
+
+		// Activate the 
+		cursor.addSelectionListener( new SelectionAdapter() {
+			// when the TreeEditor is over a cell, select the corresponding row in 
+			// the tree
+			public void widgetSelected( SelectionEvent e ) {
+				int column = cursor.getColumn();
+				if( column > 0 ) {
+					cursor.setVisible( true );
+					_treeAuto.setSelection( new TreeItem[] { cursor.getRow() } );
+				}
+				else {
+					cursor.setVisible( false );
+				}
+			}
+
+			// when the user hits "ENTER" in the TreeCursor, pop up a text editor so that 
+			// they can change the text of the cell
+			public void widgetDefaultSelected( SelectionEvent e ) {
+				int column = cursor.getColumn();
+
+				if( column > 0 ) {
+					final Text text = new Text( cursor, SWT.NONE );
+					TreeItem row = cursor.getRow();
+
+					text.setText( row.getText( column ) );
+					text.addKeyListener( new KeyAdapter() {
+						public void keyPressed( KeyEvent e ) {
+							// close the text editor and copy the data over 
+							// when the user hits "ENTER"
+							if( e.character == SWT.CR ) {
+								TreeItem row = cursor.getRow();
+								int column = cursor.getColumn();
+								row.setText( column, text.getText() );
+								text.dispose();
+							}
+							// close the text editor when the user hits "ESC"
+							if( e.character == SWT.ESC ) {
+								text.dispose();
+							}
+						}
+					} );
+					editor.setEditor( text );
+					text.setFocus();
+				}
+			}
+		} );
+
+		//
+
+		cursor.addFocusListener( new FocusListener() {
+
 			@Override
-			public void focusLost(FocusEvent e) {
+			public void focusLost( FocusEvent e ) {
 				// TODO Auto-generated method stub
 				int column = cursor.getColumn();
 				e.getSource();
-				if (column == 0){
-					cursor.setVisible(true);
+				if( column == 0 ) {
+					cursor.setVisible( true );
 				}
 			}
-			
+
 			@Override
-			public void focusGained(FocusEvent e) {
+			public void focusGained( FocusEvent e ) {
 				// TODO Auto-generated method stub
-				
+
 			}
-		});
- 		// Hide the TreeCursor when the user hits the "MOD1" or "MOD2" key.
- 		// This alows the user to select multiple items in the tree.
- 		cursor.addKeyListener(new KeyAdapter() {
- 			public void keyPressed(KeyEvent e) {
- 				if (e.keyCode == SWT.MOD1 || 
- 				    e.keyCode == SWT.MOD2 || 
- 				    (e.stateMask & SWT.MOD1) != 0 || 
- 				    (e.stateMask & SWT.MOD2) != 0) {
- 					cursor.setVisible(false);
- 				}
- 			}
- 		});
- 		// Show the TreeCursor when the user releases the "MOD2" or "MOD1" key.
- 		// This signals the end of the multiple selection task.
- 		_treeAuto.addKeyListener(new KeyAdapter() {
- 			public void keyReleased(KeyEvent e) {
- 				if (e.keyCode == SWT.MOD1 && (e.stateMask & SWT.MOD2) != 0) return;
- 				if (e.keyCode == SWT.MOD2 && (e.stateMask & SWT.MOD1) != 0) return;
- 				if (e.keyCode != SWT.MOD1 && (e.stateMask & SWT.MOD1) != 0) return;
- 				if (e.keyCode != SWT.MOD2 && (e.stateMask & SWT.MOD2) != 0) return;
- 			
- 				TreeItem[] selection = _treeAuto.getSelection();
- 				TreeItem row = (selection.length == 0) ? _treeAuto.getItem(_treeAuto.indexOf(_treeAuto.getTopItem())) : selection[0];
- 				_treeAuto.showItem(row);
- 				cursor.setSelection(row, 0);
- 				cursor.setVisible(true);
- 				cursor.setFocus();
- 			}
- 		});
-		
- 		
-		
+		} );
+		// Hide the TreeCursor when the user hits the "MOD1" or "MOD2" key.
+		// This alows the user to select multiple items in the tree.
+		cursor.addKeyListener( new KeyAdapter() {
+			public void keyPressed( KeyEvent e ) {
+				if( e.keyCode == SWT.MOD1 || e.keyCode == SWT.MOD2 || ( e.stateMask & SWT.MOD1 ) != 0 || ( e.stateMask & SWT.MOD2 ) != 0 ) {
+					cursor.setVisible( false );
+				}
+			}
+		} );
+		// Show the TreeCursor when the user releases the "MOD2" or "MOD1" key.
+		// This signals the end of the multiple selection task.
+		_treeAuto.addKeyListener( new KeyAdapter() {
+			public void keyReleased( KeyEvent e ) {
+				if( e.keyCode == SWT.MOD1 && ( e.stateMask & SWT.MOD2 ) != 0 )
+					return;
+				if( e.keyCode == SWT.MOD2 && ( e.stateMask & SWT.MOD1 ) != 0 )
+					return;
+				if( e.keyCode != SWT.MOD1 && ( e.stateMask & SWT.MOD1 ) != 0 )
+					return;
+				if( e.keyCode != SWT.MOD2 && ( e.stateMask & SWT.MOD2 ) != 0 )
+					return;
+
+				TreeItem[] selection = _treeAuto.getSelection();
+				TreeItem row = ( selection.length == 0 ) ? _treeAuto.getItem( _treeAuto.indexOf( _treeAuto.getTopItem() ) ) : selection[ 0 ];
+				_treeAuto.showItem( row );
+				cursor.setSelection( row, 0 );
+				cursor.setVisible( true );
+				cursor.setFocus();
+			}
+		} );
+
 		// Default Button
 		_autoButton = new Button( groupSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
 		gridData.horizontalSpan = 3;
 		_autoButton.setLayoutData( gridData );
-		
+
 		if( _newFP.checkIfBackupExists( _workspacePath ) )
 			_autoButton.setText( "Revert Files" );
 		else
 			_autoButton.setText( "Instrument Files" );
-		
+
 		_autoButton.addSelectionListener( this );
 		tabAuto.setControl( composite );
 	}
@@ -649,11 +666,10 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		tabTesting.setText( "Testing" );
 
 		Composite composite = new Composite( tabFolder, SWT.NULL );
-		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		GridData gridData = new GridData( SWT.FILL, SWT.FILL, true, true );
 		composite.setLayoutData( gridData );
 		GridLayout gridLayout = new GridLayout();
 		composite.setLayout( gridLayout );
-
 
 		// Create a Section for the settings
 		Group groupSettings = new Group( composite, SWT.NULL );
@@ -661,123 +677,186 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		gridData.minimumWidth = 400;
 		groupSettings.setLayoutData( gridData );
 
-		groupSettings.setText( "Settings" );
+		groupSettings.setText( "Parameters" );
 		gridLayout = new GridLayout( 2, false );
 		groupSettings.setLayout( gridLayout );
 
+		// The Executable Label
+		Label execLbl = new Label( groupSettings, SWT.NULL );
+		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING );
+		gridData.horizontalSpan = 2;
+		execLbl.setLayoutData( gridData );
+		execLbl.setText( "Executable:" );
+
+		// The Folder Path text
+		_execTxt = new Text( groupSettings, SWT.BORDER );
+		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
+		_execTxt.setLayoutData( gridData );
+
+		// Browse Button for the Binary Path
+		Button execButton = new Button( groupSettings, SWT.PUSH );
+		gridData = new GridData();
+		execButton.setLayoutData( gridData );
+		execButton.setText( "Browse" );
+		execButton.addSelectionListener( new SelectionAdapter() {
+			
+			/**
+			 * Button Selection
+			 */
+			public void widgetSelected( SelectionEvent e ) {
+				
+				// Open a File Dialog at the directory in the text box if it is valid
+				FileDialog dialog = new FileDialog( PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), SWT.OPEN );
+				File exec = new File( _folderTxt.getText() );
+				if( exec.isFile() )
+					dialog.setFilterPath( exec.getAbsolutePath() );
+
+				// Store selected File
+				String path = dialog.open();
+
+				// If selected file exists set the text path 
+				if( path != null ) {
+					File file = new File( path );
+					if( file.isFile() ) {
+
+						_execFile = file;
+
+						_execTxt.setText( file.getAbsolutePath() );
+
+					}
+				}
+				// Check the buttons
+				checkTestButtons();
+			}
+		} );
+
 		// The Folder Label
 		Label typeLbl = new Label( groupSettings, SWT.NULL );
-		gridData = new GridData(GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING );
-		gridData.horizontalSpan=2;
+		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING );
+		gridData.horizontalSpan = 2;
 		typeLbl.setLayoutData( gridData );
 		typeLbl.setText( "Test Folder:" );
 
-		
 		// The Folder Path text
-		_folderTxt= new Text( groupSettings, SWT.BORDER );
+		_folderTxt = new Text( groupSettings, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING );
 		_folderTxt.setLayoutData( gridData );
 
-		// Browse Button
-		Button folderButton = new Button(groupSettings, SWT.PUSH);
+		// Browse Folder Button
+		_folderButton = new Button( groupSettings, SWT.PUSH );
 		gridData = new GridData();
-		folderButton.setLayoutData(gridData);
-	    folderButton.setText("Browse");
-	    folderButton.addSelectionListener(new SelectionAdapter() {
-	      public void widgetSelected(SelectionEvent e) {
-	        DirectoryDialog dialog = new DirectoryDialog( PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),SWT.OPEN);
-	        File folder = new File(_folderTxt.getText());
-	        
-	        if (folder.isDirectory())
-	        	dialog.setFilterPath(folder.getAbsolutePath());
-	        
-	        String path = dialog.open();
-	        
-	        if (path != null) {
-	          File file = new File(path);
-	          if (!file.isFile()){
-	        	  _folderTxt.setText(file.getAbsolutePath());
-	        	  _fileList.setData(file);
-	        	  
-	        	  // Look at files!!
-	        	  FileFilter filter = new FileFilter() {
-					
-					@Override
-					public boolean accept(File pathname) {
-						Path path = new Path(pathname.getAbsolutePath());
-						String extension = path.getFileExtension();
-						if (extension.compareTo(Constants.EXTENSION_TEST_IN) == 0 || extension.compareTo(Constants.EXTENSION_TEST_EXP) == 0 )
-							return true;
-						else
-							return false;
+		_folderButton.setLayoutData( gridData );
+		_folderButton.setText( "Browse" );
+		_folderButton.addSelectionListener( new SelectionAdapter() {
+			/**
+			 * Button Pressed
+			 */
+			public void widgetSelected( SelectionEvent e ) {
+				
+				// Open Folder Dialog 
+				DirectoryDialog dialog = new DirectoryDialog( PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), SWT.OPEN );
+				File folder = new File( _folderTxt.getText() );
+				if( folder.isDirectory() )
+					dialog.setFilterPath( folder.getAbsolutePath() );
+				String path = dialog.open();
+
+				// The File Exists
+				if( path != null ) {
+					File file = new File( path );
+					if( !file.isFile() ) {
+
+						// Set the text box to the path chosen
+						_testingFolder = file;
+						_folderTxt.setText( file.getAbsolutePath() );
+						_fileList.setData( file );
+
+						// Filter files with .in and .exp 
+						FileFilter filter = new FileFilter() {
+
+							@Override
+							public boolean accept( File pathname ) {
+								Path path = new Path( pathname.getAbsolutePath() );
+								String extension = path.getFileExtension();
+								if( extension.compareTo( Constants.EXTENSION_TEST_IN ) == 0 || extension.compareTo( Constants.EXTENSION_TEST_EXP ) == 0 )
+									return true;
+								else
+									return false;
+							}
+						};
+						
+						// Clear the List
+						_fileList.removeAll();
+						
+						// Fill it with the Test Files
+						File[] files = file.listFiles( filter );
+						String[] fileStrings = new String[files.length];
+
+						// Sort alphabetically
+						for( int i = 0; i < files.length; i++ )
+							fileStrings[ i ] = files[ i ].getName();
+
+						java.util.Arrays.sort( fileStrings );
+
+						_fileList.setItems( fileStrings );
 					}
-				};
-				_fileList.removeAll();
-				File [] files =  file.listFiles(filter);
-				String [] fileStrings = new String [files.length];
+				}
 				
-				for ( int i = 0; i < files.length; i++)
-					fileStrings[i] = files[i].getName();
-					
-				java.util.Arrays.sort(fileStrings);	
-				
-	        	_fileList.setItems(fileStrings);
-	          }
-	        }
-	      }
-	    });    
-	    
-	    
-	    // List to display files
-	    
-	    _fileList = new List (groupSettings, SWT.BORDER | SWT.V_SCROLL);
+				// Check the button
+				checkTestButtons();
+			}
+		} );
+
+		// File List
+		_fileList = new List( groupSettings, SWT.BORDER | SWT.V_SCROLL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_CENTER | GridData.FILL_HORIZONTAL );
 		gridData.heightHint = 150;
 		gridData.minimumWidth = 150;
 		gridData.horizontalSpan = 2;
-		_fileList .setLayoutData(gridData);
-		
-		_fileList .addListener (SWT.DefaultSelection, new Listener () {
-			public void handleEvent (Event e) {
-				if (_fileList.getData() instanceof File){
-					File directory = (File) _fileList.getData();
-//					String pathString = directory.getAbs
-					Path path = new Path(directory.getAbsolutePath());
+		_fileList.setLayoutData( gridData );
+		_fileList.addListener( SWT.DefaultSelection, new Listener() {
+			
+			/**
+			 * Double Click - Open file in Editor
+			 */
+			public void handleEvent( Event e ) {
+				if( _fileList.getData() instanceof File ) {
+					File directory = (File)_fileList.getData();
+
+					Path path = new Path( directory.getAbsolutePath() );
 					String[] selection = _fileList.getSelection();
-					if (_fileList.getSelectionCount() > 0){
-						path = (Path) path.append(selection[0]);
+					if( _fileList.getSelectionCount() > 0 ) {
+						path = (Path)path.append( selection[ 0 ] );
 						EditorHandler eH = new EditorHandler();
-						eH.openFile(path);
+						eH.openFile( path );
 					}
+
 				}
-				
-				
+
 			}
-		});
-		
-		
+		} );
+
 		// The Execution Parameters
 		Composite compositeSettings = new Composite( groupSettings, SWT.NULL );
-		gridData = new GridData( GridData.FILL_HORIZONTAL  | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING);
+		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_BEGINNING );
 		gridData.horizontalSpan = 2;
-		
+
 		compositeSettings.setLayoutData( gridData );
-		gridLayout = new GridLayout(3, false);
+		gridLayout = new GridLayout( 3, false );
 		compositeSettings.setLayout( gridLayout );
-		
+
 		// Label for Execution
 		Label executionLbl = new Label( compositeSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
 		executionLbl.setLayoutData( gridData );
 		executionLbl.setText( "Test Execution:" );
-		
+
 		// The Execution Text	
-		_executionTxt= new Text( compositeSettings, SWT.BORDER );
-		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.FILL_HORIZONTAL  );
+		_executionTxt = new Text( compositeSettings, SWT.BORDER );
+		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.FILL_HORIZONTAL );
 		gridData.minimumWidth = 50;
 		_executionTxt.setLayoutData( gridData );
+		_executionTxt.setText( "1" );
 
-		
 		// Execution Combo
 		_executionCombo = new Combo( compositeSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
@@ -787,8 +866,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_executionCombo.add( "Seconds" );
 		_executionCombo.add( "Minutes" );
 		_executionCombo.add( "Times" );
-		_executionCombo.select( 1 );
-
+		_executionCombo.select( 2 );
 
 		// Label for Execution
 		Label normalizationLbl = new Label( compositeSettings, SWT.NULL );
@@ -799,53 +877,188 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// Combo for Normalization
 		_normalizationCombo = new Combo( compositeSettings, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING | GridData.FILL_HORIZONTAL );
-		gridData.horizontalSpan =2;
+		gridData.horizontalSpan = 2;
 		gridData.minimumWidth = 50;
 		_normalizationCombo.setLayoutData( gridData );
 		_normalizationCombo.add( "None" );
 		_normalizationCombo.add( "Sort" );
 		_normalizationCombo.select( 0 );
 
-		
 		// Test Button
 		_testButton = new Button( composite, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_END );
-	
 		_testButton.setLayoutData( gridData );
-		_testButton.setText("Run Tests");
-		
+		_testButton.setText( "Run Tests" );
+		_testButton.addSelectionListener( new SelectionAdapter() {
+			
+			/**
+			 * Execute Testing
+			 */
+			public void widgetSelected( SelectionEvent e ) {
+
+				if( _testingFolder != null && _testingFolder.exists() && _execFile != null && _execFile.exists()) {
+
+					// Filter for Inputs
+					FileFilter filter = new FileFilter() {
+
+						@Override
+						public boolean accept( File pathname ) {
+							Path path = new Path( pathname.getAbsolutePath() );
+							String extension = path.getFileExtension();
+							if( extension.compareTo( Constants.EXTENSION_TEST_IN ) == 0 )
+								return true;
+							else
+								return false;
+						}
+					};
+
+					// Input Files
+					final File[] files = _testingFolder.listFiles( filter );
+					// Type of run
+					final String comboString = _executionCombo.getText();
+					// How long/ how many times
+					try {
+						_numberExecution = Integer.parseInt( _executionTxt.getText() );
+					}
+					catch( NumberFormatException E ) {
+						_executionTxt.setText( String.valueOf( _numberExecution ) );
+					}
+
+					// Progress Box
+					ProgressMonitorDialog dialog = new ProgressMonitorDialog( PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell() );
+					try {
+						dialog.run( true, true, new IRunnableWithProgress() {
+							public void run( IProgressMonitor monitor ) {
+								Tester t = new Tester();
+
+								// Run a number of times
+								if( comboString.compareTo( "Times" ) == 0 ) {
+									int sizeOfTest = _numberExecution * files.length;
+									monitor.beginTask( "Eclipticon Testing", sizeOfTest );
+
+									t.TestNumberOfTimes( _execFile, files, _numberExecution, monitor );
+									_numberTested = _numberExecution;
+
+								}
+								// Run a number of Seconds
+								else if( comboString.compareTo( "Seconds" ) == 0 ) {
+
+									monitor.beginTask( "Eclipticon Testing", _numberExecution * 1000 );
+
+									_numberTested = t.TestForSeconds( _execFile, files, _numberExecution, monitor );
+
+								}
+								// Run a number of Minutes
+								else if( comboString.compareTo( "Minutes" ) == 0 ) {
+
+									monitor.beginTask( "Eclipticon Testing", _numberExecution * 1000 * 60 );
+
+									_numberTested = t.TestForMinutes( _execFile, files, _numberExecution, monitor );
+
+								}
+								monitor.done();
+							}
+						} );
+						
+						// Update the Results Table
+						_resultsTable.removeAll();
+						_resultsTable.setEnabled( true );
+						Tester t = new Tester();
+						for( File currentFile : files ) {
+
+							String[] result = new String[2];
+							result[ 0 ] = currentFile.getName();
+							result[ 1 ] = String.valueOf( t.getResults( currentFile, _numberTested ) ) + "/" + String.valueOf( _numberTested );
+							TableItem item = new TableItem( _resultsTable, SWT.NULL );
+							item.setText( result );
+
+						}
+					}
+					catch( InvocationTargetException e1 ) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					catch( InterruptedException e1 ) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+
+			}
+		} );
+
 		// Label for Execution
 		Label resultsLbl = new Label( composite, SWT.NULL );
 		gridData = new GridData( GridData.HORIZONTAL_ALIGN_BEGINNING );
 		resultsLbl.setLayoutData( gridData );
 		resultsLbl.setText( "Test Results:" );
-		
+
 		// Results Table
-		_resultsTable = new Table( composite, SWT.BORDER);
+		_resultsTable = new Table( composite, SWT.BORDER );
 		gridData = new GridData( GridData.FILL_HORIZONTAL | GridData.VERTICAL_ALIGN_BEGINNING | GridData.HORIZONTAL_ALIGN_CENTER );
-		gridData.heightHint = 150;		
+		gridData.heightHint = 150;
 		_resultsTable.setLayoutData( gridData );
-		
-		_resultsTable.setHeaderVisible(true);
-		_resultsTable.setLinesVisible(true);
-		
-		TableColumn testCol = new TableColumn(_resultsTable, SWT.NONE);
-		testCol.setText("Test Name");
+
+		_resultsTable.setHeaderVisible( true );
+		_resultsTable.setLinesVisible( true );
+
+		TableColumn testCol = new TableColumn( _resultsTable, SWT.NONE );
+		testCol.setText( "Test Name" );
 		testCol.pack();
-		
-		TableColumn resultsCol = new TableColumn(_resultsTable, SWT.NONE);
-		resultsCol.setText("Results");
+
+		TableColumn resultsCol = new TableColumn( _resultsTable, SWT.NONE );
+		resultsCol.setText( "Results" );
 		resultsCol.pack();
+
+		_resultsTable.setEnabled( false );
 		
-		_resultsTable.setEnabled(false);
+		// Check the Buttons and Widgets
+		checkTestButtons();
 
 		tabTesting.setControl( composite );
 	}
-	
-	
+
+	/**
+	 * Check the Buttons and Widgets
+	 */
+	public void checkTestButtons() {
+		File exec = new File( _execTxt.getText() );
+		File dir = new File( _folderTxt.getText() );
+
+		if( exec.isFile() ) {
+			_folderTxt.setEnabled( true );
+			_folderButton.setEnabled( true );
+
+			if( dir.isDirectory() ) {
+				_testButton.setEnabled( true );
+				_executionTxt.setEnabled( true );
+				_executionCombo.setEnabled( true );
+				_normalizationCombo.setEnabled( true );
+				_fileList.setEnabled( true );
+			}
+			else {
+				_testButton.setEnabled( false );
+				_executionTxt.setEnabled( false );
+				_executionCombo.setEnabled( false );
+				_normalizationCombo.setEnabled( false );
+				_fileList.setEnabled( false );
+
+			}
+
+		}
+		else {
+			_folderTxt.setEnabled( false );
+			_folderButton.setEnabled( false );
+			_testButton.setEnabled( false );
+			_executionTxt.setEnabled( false );
+			_executionCombo.setEnabled( false );
+			_normalizationCombo.setEnabled( false );
+			_fileList.setEnabled( false );
+		}
+	}
+
 	/*
 	 * Adjust the sliders positions to mimic the XML
-	 * 
 	 * @param autoConfig
 	 */
 	public void populateAutoTab( AutomaticConfiguration autoConfig ) {
@@ -861,120 +1074,117 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		// First go through and create all of the directory trees
 		// ------------------------------------------------------
 		for( SourceFile sf : sources ) {
-			
+
 			// Get the path from the workspace
-			IPath folderPath =  sf.getPath().makeRelativeTo(_workspacePath);
-			folderPath = folderPath.removeLastSegments(1);
+			IPath folderPath = sf.getPath().makeRelativeTo( _workspacePath );
+			folderPath = folderPath.removeLastSegments( 1 );
 			//Get the tree items and find the path in the tree
 
 			Object parentItem = _treeAuto;
-			
+
 			// Iterate all of the path folders
-			for (String currentSegment:folderPath.segments()){
+			for( String currentSegment : folderPath.segments() ) {
 
 				// Go through Children of current folder and try to match to an item 
 				Boolean found = false;
 				TreeItem[] items = new TreeItem[0];
-				
-				if (parentItem instanceof TreeItem){
-					items = ((TreeItem) parentItem).getItems();
-					
+
+				if( parentItem instanceof TreeItem ) {
+					items = ( (TreeItem)parentItem ).getItems();
+
 				}
-				else if (parentItem instanceof Tree){
-					items = ((Tree) parentItem).getItems();
-					
+				else if( parentItem instanceof Tree ) {
+					items = ( (Tree)parentItem ).getItems();
+
 				}
-				
-				for (TreeItem currentItem: items){
-										
-					if (currentItem.getText(0).compareTo(currentSegment) == 0){
+
+				for( TreeItem currentItem : items ) {
+
+					if( currentItem.getText( 0 ).compareTo( currentSegment ) == 0 ) {
 						found = true;
 						parentItem = currentItem;
 						break;
-						
+
 					}
-					
+
 				}
-				
+
 				// Check if matched, make one if not
-				
-				if (!found){
-					if (parentItem instanceof TreeItem){
-						TreeItem item = new TreeItem((TreeItem) parentItem,SWT.NONE );
-						String[] tempStr = {currentSegment, "",""};
-						item.setText(tempStr);
+
+				if( !found ) {
+					if( parentItem instanceof TreeItem ) {
+						TreeItem item = new TreeItem( (TreeItem)parentItem, SWT.NONE );
+						String[] tempStr = { currentSegment, "", "" };
+						item.setText( tempStr );
 						parentItem = item;
 						item.setChecked( true );
 					}
-					else if (parentItem instanceof Tree){
-						TreeItem item = new TreeItem((Tree) parentItem,SWT.NONE );
-						String[] tempStr = {currentSegment, "",""};
-						item.setText(tempStr);
+					else if( parentItem instanceof Tree ) {
+						TreeItem item = new TreeItem( (Tree)parentItem, SWT.NONE );
+						String[] tempStr = { currentSegment, "", "" };
+						item.setText( tempStr );
 						parentItem = item;
 						item.setChecked( true );
 					}
-					
-				}	
-				
+
+				}
+
 			}
 		}
-		
+
 		// Place the files in now
 		// ----------------------
 		for( SourceFile sf : sources ) {
-			
+
 			// Get the path from the workspace
-			IPath folderPath =  sf.getPath().makeRelativeTo(_workspacePath);
-			folderPath = folderPath.removeLastSegments(1);
+			IPath folderPath = sf.getPath().makeRelativeTo( _workspacePath );
+			folderPath = folderPath.removeLastSegments( 1 );
 			//Get the tree items and find the path in the tree
 
 			Object parentItem = _treeAuto;
-			
+
 			// Iterate all of the path folders
-			for (String currentSegment:folderPath.segments()){
+			for( String currentSegment : folderPath.segments() ) {
 
 				// Go through Children of current folder and try to match to an item 
 				TreeItem[] items = new TreeItem[0];
-				
-				if (parentItem instanceof TreeItem){
-					items = ((TreeItem) parentItem).getItems();
-					
+
+				if( parentItem instanceof TreeItem ) {
+					items = ( (TreeItem)parentItem ).getItems();
+
 				}
-				else if (parentItem instanceof Tree){
-					items = ((Tree) parentItem).getItems();
-					
+				else if( parentItem instanceof Tree ) {
+					items = ( (Tree)parentItem ).getItems();
+
 				}
-				
-				for (TreeItem currentItem: items){
-										
-					if (currentItem.getText(0).compareTo(currentSegment) == 0){
+
+				for( TreeItem currentItem : items ) {
+
+					if( currentItem.getText( 0 ).compareTo( currentSegment ) == 0 ) {
 						parentItem = currentItem;
 						break;
 					}
 				}
 			}
-			
-			
+
 			// Have the final Location of the SF now add it to the tree
-			if (parentItem instanceof TreeItem){
-				TreeItem item = new TreeItem( (TreeItem) parentItem, SWT.NONE );
-				String[] tempStr = {sf.getName(), "0","100"};
-				item.setText(tempStr);
+			if( parentItem instanceof TreeItem ) {
+				TreeItem item = new TreeItem( (TreeItem)parentItem, SWT.NONE );
+				String[] tempStr = { sf.getName(), "0", "100" };
+				item.setText( tempStr );
 				item.setData( sf );
 				item.setChecked( true );
-				
+
 			}
-			else if (parentItem instanceof Tree){
-				TreeItem item = new TreeItem((Tree) parentItem, SWT.NONE );
-				String[] tempStr = {sf.getName(), "0","100"};
-				item.setText(tempStr);
+			else if( parentItem instanceof Tree ) {
+				TreeItem item = new TreeItem( (Tree)parentItem, SWT.NONE );
+				String[] tempStr = { sf.getName(), "0", "100" };
+				item.setText( tempStr );
 				item.setData( sf );
 				item.setChecked( true );
 			}
-			
 
 		}
-
 
 	}
 
@@ -985,12 +1195,12 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	 */
 	public void fillTree() {
 
-		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );	
-		
+		ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
+
 		// Perform pre-parse
-		PreParser pp = new PreParser(); 
+		PreParser pp = new PreParser();
 		pp.findSynchronizedMethods( sources );
-		
+
 		for( SourceFile sf : sources ) {
 			sf.clearInterestingPoints();
 			_newFP.findInterestPoints( sf );
@@ -1001,7 +1211,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				item.setData( sf );
 				for( InterestPoint ip : sf.getInterestingPoints() ) {
 					TreeItem subItem = new TreeItem( item, SWT.NONE );
-					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), ip.getConstructSyntax(),"" };
+					String[] strings = { "Line: " + ip.getLine(), ip.getConstruct(), ip.getConstructSyntax(), "" };
 					subItem.setText( strings );
 					subItem.setData( ip );
 					if( ip instanceof InstrumentationPoint ) {
@@ -1043,7 +1253,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtHigher.setEnabled( true );
 		_txtProb.setEnabled( true );
 	}
-	
+
 	/**
 	 * Disable the Manual Tabs Info Labels
 	 */
@@ -1057,7 +1267,6 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 		_txtHigher.setEnabled( false );
 		_txtProb.setEnabled( false );
 	}
-
 
 	@Override
 	public Control getControl() {
@@ -1085,57 +1294,60 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 	@Override
 	public void setSelection( ISelection arg0, boolean arg1 ) {
 	}
-	
+
 	/**
 	 * Instrument the Tree Item in the Manual Tab specified
+	 * 
 	 * @param item The Tree Item to Instrument
 	 * @param refreshWorkspace Refresh the workspace after uninstrumentation
 	 */
-	private void instrumentManualTreeItem(TreeItem item, boolean refreshWorkspace){
+	private void instrumentManualTreeItem( TreeItem item, boolean refreshWorkspace ) {
 		refreshManualTreeItem( item.getParentItem() );
-		
+
 		// Create annotation
 		InterestPoint ip = (InterestPoint)item.getData();
-		InstrumentationPoint instr = new InstrumentationPoint(ip.getLine(), ip.getSequence(),ip.getConstruct(), ip.getConstructSyntax(),Constants.NOISE_YIELD, 100, 0, 1000);
+		InstrumentationPoint instr = new InstrumentationPoint( ip.getLine(), ip.getSequence(), ip.getConstruct(), ip.getConstructSyntax(), Constants.NOISE_YIELD, 100, 0, 1000 );
 		SourceFile sf = (SourceFile)item.getParentItem().getData();
 		try {
-			_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD, refreshWorkspace);
+			_newFP.manipulateAnnotation( sf, instr, Constants.ANNOTATION_ADD, refreshWorkspace );
 		}
 		catch( IOException e ) {
-	
+
 			e.printStackTrace();
-		}		
-		refreshManualTreeItem(item.getParentItem() );
+		}
+		refreshManualTreeItem( item.getParentItem() );
 	}
-	
+
 	/**
 	 * Uninstrument the Tree Item in the Manual Tab specified
+	 * 
 	 * @param item The Tree Item to Uninstrument
 	 * @param refreshWorkspace Refresh the workspace after uninstrumentation
 	 */
-	private void uninstrumentManualTreeItem(TreeItem item, boolean refreshWorkspace){
+	private void uninstrumentManualTreeItem( TreeItem item, boolean refreshWorkspace ) {
 		refreshManualTreeItem( item.getParentItem() );
-		
+
 		InstrumentationPoint ip = (InstrumentationPoint)item.getData();
-		SourceFile sf = (SourceFile) item.getParentItem().getData();
+		SourceFile sf = (SourceFile)item.getParentItem().getData();
 		try {
-			_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE, refreshWorkspace);
+			_newFP.manipulateAnnotation( sf, ip, Constants.ANNOTATION_DELETE, refreshWorkspace );
 		}
 		catch( IOException e ) {
-			
+
 			e.printStackTrace();
 		}
-		
+
 		refreshManualTreeItem( item.getParentItem() );
 	}
-	
+
 	/**
-	 * Updates the Tree Item Parent 
+	 * Updates the Tree Item Parent
+	 * 
 	 * @param parent
 	 */
-	private void refreshManualTreeItem(TreeItem parent){
-		
-		SourceFile sf = (SourceFile) parent.getData();
+	private void refreshManualTreeItem( TreeItem parent ) {
+
+		SourceFile sf = (SourceFile)parent.getData();
 		sf.clearInterestingPoints();
 		_newFP.findInterestPoints( sf );
 		ArrayList<InterestPoint> ips = sf.getInterestingPoints();
@@ -1145,24 +1357,24 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			InterestPoint ipCurrent = ips.get( count );
 			count++;
 			i.setData( ipCurrent );
-			
+
 			String[] strings = { "Line: " + ipCurrent.getLine(), ipCurrent.getConstruct(), ipCurrent.getConstructSyntax(), "" };
 			i.setText( strings );
-			
+
 			if( ipCurrent instanceof InstrumentationPoint ) {
-				
+
 				InstrumentationPoint tempIP = (InstrumentationPoint)ipCurrent;
 				if( tempIP.getType() == Constants.NOISE_SLEEP )
 					i.setText( 3, "Sleep" );
 				else if( tempIP.getType() == Constants.NOISE_YIELD )
 					i.setText( 3, "Yield" );
-				
-				i.setChecked(true);
+
+				i.setChecked( true );
 			}
-			else{
-				i.setChecked(false);
+			else {
+				i.setChecked( false );
 			}
-			
+
 		}
 	}
 
@@ -1181,125 +1393,122 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 			}
 		}
 	}
-	
+
 	/**
 	 * Update the children Tree Items
+	 * 
 	 * @param item
 	 */
-	void updateChildrenItems(TreeItem item){
+	void updateChildrenItems( TreeItem item ) {
 
 		// Make all it's children the same check status
 		if( item.getItemCount() > 0 ) {
 			for( TreeItem i : item.getItems() ) {
 				i.setChecked( item.getChecked() );
-				i.setGrayed(false);
-				updateChildrenItems(i);
+				i.setGrayed( false );
+				updateChildrenItems( i );
 			}
 		}
-		
+
 	}
-	
-	
+
 	@Override
 	/*
 	 * Takes care of the widget selections
 	 */
 	public void widgetSelected( SelectionEvent arg0 ) {
-	
 
 		// Selected Item was something in our Tree
 		if( arg0.item instanceof TreeItem ) {
 
 			TreeItem selectedItem = (TreeItem)arg0.item;
-			
+
 			// If the selection was checking a checkbox
 			if( arg0.detail == SWT.CHECK ) {
-				
+
 				// If it is grayed, make it checked
 				// All Trees
 				if( selectedItem.getGrayed() ) {
 					selectedItem.setChecked( true );
 					selectedItem.setGrayed( false );
 				}
-				
-				
+
 				// If it is in the Auto Tree, just handle the check marks
-				if (selectedItem.getParent() == _treeAuto){
+				if( selectedItem.getParent() == _treeAuto ) {
 
 					//Recursively update children
-					updateChildrenItems(selectedItem);
-				
+					updateChildrenItems( selectedItem );
+
 					TreeItem item = selectedItem.getParentItem();
-				
-					if (item != null)
-						verifyTreeItemParent(item);
+
+					if( item != null )
+						verifyTreeItemParent( item );
 				}
-							
+
 				// If it is in the Manual Tree, handle the check marks
 				// and the instrumentation as well
-				else{
-					
+				else {
+
 					// The selection was at the root (File Names)
 					if( selectedItem.getParentItem() == null ) {
-						
+
 						int itemCount = selectedItem.getItemCount();
 						int currentCount = 0;
-						
+
 						// Make all it's children the same check status and instrument them where needed
 						if( itemCount > 0 ) {
-							
-							
+
 							for( TreeItem i : selectedItem.getItems() ) {
-								
-								refreshManualTreeItem(selectedItem);
-								
+
+								refreshManualTreeItem( selectedItem );
+
 								currentCount++;
-								
+
 								// Only (un)instrument if the check mark is changing
-								if (i.getChecked() != selectedItem.getChecked()){
-									
+								if( i.getChecked() != selectedItem.getChecked() ) {
+
 									boolean refresh = false;
-									
-									if (currentCount == itemCount)
+
+									if( currentCount == itemCount )
 										refresh = true;
-									
-									if (selectedItem.getChecked()){
-										instrumentManualTreeItem(i, refresh);
+
+									if( selectedItem.getChecked() ) {
+										instrumentManualTreeItem( i, refresh );
 									}
 									else
-										uninstrumentManualTreeItem(i, refresh);
-									
+										uninstrumentManualTreeItem( i, refresh );
+
 								}
-								
+
 							}
 						}
-						verifyTreeItemParent(selectedItem);
-						
+						verifyTreeItemParent( selectedItem );
+
 					}
-					
+
 					// If the Selection was at the line level (instrumentation point)
 					else {
-	
+
 						// Get it's root item (File Name)
 						TreeItem parent = selectedItem.getParentItem();
-	
+
 						// Check to see if it was checked or unchecked
 						if( selectedItem.getChecked() ) {
-							instrumentManualTreeItem(selectedItem, true);
+							instrumentManualTreeItem( selectedItem, true );
 						}
-	
+
 						// It was unchecked
 						else {
 							parent.setChecked( false );
-							uninstrumentManualTreeItem(selectedItem, true);
+							uninstrumentManualTreeItem( selectedItem, true );
 						}
-						
-						verifyTreeItemParent(parent);
+
+						verifyTreeItemParent( parent );
 
 					}
 				}
 			}
-			
+
 			// The tree item selected was not the checkmark, the tree item itself
 			else {
 				// Selected item is a root file, disable fields not needed
@@ -1316,35 +1525,33 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				}
 			}
 		}
-		
-		
-		
+
 		// The Widget was a button
 		else if( arg0.widget instanceof Button ) {
-			if (_testing)
-				createTestTab(_folderTab);
-			else{
+			if( _testing )
+				createTestTab( _folderTab );
+			else {
 				Instrumentor i = new Instrumentor();
 				ArrayList<SourceFile> sources = _newFP.getFiles( _workspacePath );
-				
+
 				// Revert Files instead of instrumenting them
 				if( _newFP.checkIfBackupExists( _workspacePath ) ) {
-					
-					setButtonsInstrument(true);
+
+					setButtonsInstrument( true );
 					for( SourceFile sf : sources ) {
 						try {
 							i.revertToOriginalState( sf );
 						}
 						catch( IOException e ) {
-							
+
 							e.printStackTrace();
 						}
 					}
 				}
-				
+
 				// Instrument the files
 				else {
-					setButtonsInstrument(false);
+					setButtonsInstrument( false );
 					// Manual Instrumentation
 					if( arg0.widget == _manualButton ) {
 						for( SourceFile sf : sources ) {
@@ -1353,7 +1560,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 							i.instrument( sf, false );
 						}
 					}
-					
+
 					// Automatic Instrumentation
 					else if( arg0.widget == _autoButton ) {
 						{
@@ -1361,22 +1568,22 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 							if( _treeAuto.getItemCount() > 0 ) {
 								TreeItem[] items = _treeAuto.getItems();
 								//Go through each top tree item
-								for( TreeItem tI : items){
-									
+								for( TreeItem tI : items ) {
+
 									// Recursively Instrument the tree item 
-									instrumentAutoTreeItem(tI);
+									instrumentAutoTreeItem( tI );
 								}
 							}
 						}
 					}
-				}		
-	
+				}
+
 			}
 		}
 
 		// The Widget selected was a Combo box
 		else if( arg0.widget == _cmbType ) {
-			
+
 			// Look at the tree item currently being editted.
 			TreeItem[] item = _treeManual.getSelection();
 			InstrumentationPoint point = (InstrumentationPoint)item[ 0 ].getData();
@@ -1388,27 +1595,27 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 					_modified = true;
 				}
 			}
-			else if( _cmbType.getText().compareTo( "Yield" ) == 0 ){
+			else if( _cmbType.getText().compareTo( "Yield" ) == 0 ) {
 				if( point.getType() != Constants.NOISE_YIELD ) {
 					point.setType( Constants.NOISE_YIELD );
 					_modified = true;
 				}
 			}
-			
+
 			// If the modified flag is raised, the current treeitem has been changed so write out to xml
 			if( _modified ) {
 				_modified = false;
-				
-				SourceFile sf = (SourceFile) item[0].getParentItem().getData();
-				refreshManualTreeItem( item[0].getParentItem() );
+
+				SourceFile sf = (SourceFile)item[ 0 ].getParentItem().getData();
+				refreshManualTreeItem( item[ 0 ].getParentItem() );
 				try {
 					_newFP.manipulateAnnotation( sf, point, Constants.ANNOTATION_UPDATE, true );
 				}
 				catch( IOException e ) {
-					
+
 					e.printStackTrace();
 				}
-				refreshManualTreeItem( item[0].getParentItem() );	
+				refreshManualTreeItem( item[ 0 ].getParentItem() );
 			}
 		}
 		else if( arg0.widget == _sleepYield ) {
@@ -1462,7 +1669,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_ach.writeXml();
 			}
 			catch( IOException e ) {
-				
+
 				e.printStackTrace();
 			}
 			_modified = false;
@@ -1483,10 +1690,10 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	@Override
 	public void focusLost( FocusEvent e ) {
-		
+
 		// Flag Variable
 		int temp = 0;
-		
+
 		// Upon the widget loosing focus it checks to see if anything has been modified
 		if( _modified ) {
 			TreeItem[] selectedItem = null;
@@ -1495,9 +1702,7 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				// If it has been modified
 				selectedItem = _treeManual.getSelection();
 				pointChanging = (InstrumentationPoint)selectedItem[ 0 ].getData();
-			
-			
-			
+
 				// Find which widget lost focus then update it
 				if( e.widget == _txtHigher ) {
 					pointChanging.setHigh( Integer.parseInt( _txtHigher.getText() ) );
@@ -1519,17 +1724,17 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 				_ach.getConfiguration().setLowDelayRange( Integer.parseInt( _txtAutoLower.getText() ) );
 			}
 			// Update the respective XML
-			
+
 			// Update the respective configuration
 			try {
-				if (temp == 0)
+				if( temp == 0 )
 					_ach.writeXml();
-				else{
-					refreshManualTreeItem( selectedItem[0].getParentItem() );
-					SourceFile sf = (SourceFile) selectedItem[0].getParentItem().getData();
-					_newFP.manipulateAnnotation( sf, pointChanging, Constants.ANNOTATION_UPDATE, true);
-					refreshManualTreeItem( selectedItem[0].getParentItem() );
-				}			
+				else {
+					refreshManualTreeItem( selectedItem[ 0 ].getParentItem() );
+					SourceFile sf = (SourceFile)selectedItem[ 0 ].getParentItem().getData();
+					_newFP.manipulateAnnotation( sf, pointChanging, Constants.ANNOTATION_UPDATE, true );
+					refreshManualTreeItem( selectedItem[ 0 ].getParentItem() );
+				}
 			}
 			catch( IOException e1 ) {
 				e1.printStackTrace();
@@ -1540,137 +1745,140 @@ public class EclipticonViewer extends Viewer implements SelectionListener, Modif
 
 	/**
 	 * Recursively auto instrument the tree items
+	 * 
 	 * @param item the top tree item to check.
 	 */
-	public void instrumentAutoTreeItem(TreeItem item){
-		
+	public void instrumentAutoTreeItem( TreeItem item ) {
+
 		// If it is checked then check if it a source file
 		// or has children
-		if (item.getChecked()){
-			
+		if( item.getChecked() ) {
+
 			// The Tree Item is a sourceFile
-			if (item.getData() instanceof SourceFile){
+			if( item.getData() instanceof SourceFile ) {
 				Instrumentor i = new Instrumentor();
-				SourceFile sf = (SourceFile) item.getData();
+				SourceFile sf = (SourceFile)item.getData();
 				sf.clearInterestingPoints();
 				_newFP.findInterestPoints( sf );
-				
+
 				// set the lower and upper bound if it exists
-				try{
-					int lower = Integer.parseInt(item.getText(1));
-					int higher = Integer.parseInt(item.getText(2));
-					
-					if ( lower >= 0 && lower <= 100 && higher >= 0 && higher <= 100 && lower <= higher){
-						sf.setLowerBound(lower);
-						sf.setUpperBound(higher);
+				try {
+					int lower = Integer.parseInt( item.getText( 1 ) );
+					int higher = Integer.parseInt( item.getText( 2 ) );
+
+					if( lower >= 0 && lower <= 100 && higher >= 0 && higher <= 100 && lower <= higher ) {
+						sf.setLowerBound( lower );
+						sf.setUpperBound( higher );
 					}
 				}
-				catch (Exception e) {
+				catch( Exception e ) {
 					// TODO: handle exception
 				}
-				
+
 				// Only instrument it if it has points worth looking at.
 				if( sf.getInterestingPoints().size() > 0 )
 					i.instrument( sf, true );
 			}
-			
+
 			// Recursively Instrument the children
-			else{
-				if (item.getItemCount() > 0){
-					for (TreeItem childItem : item.getItems()){
-						instrumentAutoTreeItem(childItem);
+			else {
+				if( item.getItemCount() > 0 ) {
+					for( TreeItem childItem : item.getItems() ) {
+						instrumentAutoTreeItem( childItem );
 					}
 				}
 			}
-				
+
 		}
 	}
-	
+
 	/**
-	 * Takes the given tree item and changes it's status based on it's children items. Will change to
-	 * unchecked, checked, or grayed
+	 * Takes the given tree item and changes it's status based on it's children items. Will change
+	 * to unchecked, checked, or grayed
+	 * 
 	 * @param item
 	 */
-	public void verifyTreeItemParent(TreeItem item){
+	public void verifyTreeItemParent( TreeItem item ) {
 		int count = 0;
 		Boolean siblingUnchecked = false;
 		Boolean grayed = false;
-		
+
 		//Go though all children
-		for (TreeItem i : item.getItems()){
-			if (i.getGrayed()){
+		for( TreeItem i : item.getItems() ) {
+			if( i.getGrayed() ) {
 				grayed = true;
 				break;
 			}
 			// When hit a check increase count
-			if (i.getChecked() ){
+			if( i.getChecked() ) {
 				count++;
-				
+
 				// There's been checked siblings and encountered and unchecked, exit because
 				// we already know it will be a grayed check
-				if (siblingUnchecked && count > 0)
+				if( siblingUnchecked && count > 0 )
 					break;
-				
+
 			}
-			
+
 			// Found an unchecked item
 			else
 				siblingUnchecked = true;
 		}
-		
-		if(grayed){
-			item.setGrayed(true);
-			item.setChecked(true);
+
+		if( grayed ) {
+			item.setGrayed( true );
+			item.setChecked( true );
 		}
 		// Has a checked item
-		else if (count > 0){
+		else if( count > 0 ) {
 			// Found an unchecked sibling
-			if (siblingUnchecked){
-				item.setGrayed(true);
+			if( siblingUnchecked ) {
+				item.setGrayed( true );
 			}
 			// All must be checked
-			else{
-				item.setGrayed(false);
-				
+			else {
+				item.setGrayed( false );
+
 			}
-			item.setChecked(true);
-			
+			item.setChecked( true );
+
 		}
-		else{
-			item.setGrayed(false);
-			item.setChecked(false);
+		else {
+			item.setGrayed( false );
+			item.setChecked( false );
 		}
-		
 
 		//item.setChecked(false);
 		// Parent is not a tree
-		if (item.getParentItem() != null){
-			
-			verifyTreeItemParent(item.getParentItem());
-			
+		if( item.getParentItem() != null ) {
+
+			verifyTreeItemParent( item.getParentItem() );
+
 		}
 
 	}
+
 	/**
-	 * Check the buttons in the Auto and Manual to see if they have the correct text to represent reverting
-	 * files or not.
+	 * Check the buttons in the Auto and Manual to see if they have the correct text to represent
+	 * reverting files or not.
 	 */
 	public void checkButtons() {
 		// There's backup files, so set appropriate text for the buttons
 		if( _newFP.checkIfBackupExists( _workspacePath ) ) {
-			setButtonsInstrument(false);
+			setButtonsInstrument( false );
 		}
 		else {
-			setButtonsInstrument(true);
+			setButtonsInstrument( true );
 		}
 	}
-	
+
 	/**
 	 * Set the buttons either to instrument or uninstrument
+	 * 
 	 * @param instrument
 	 */
-	private void setButtonsInstrument(boolean instrument){
-		if (instrument){
+	private void setButtonsInstrument( boolean instrument ) {
+		if( instrument ) {
 			_autoButton.setText( "Instrument Files" );
 			_manualButton.setText( "Instrument Files" );
 		}
