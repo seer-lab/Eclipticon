@@ -12,7 +12,7 @@
             name="Eclipticon"
             icon="icons/sample.gif"
             category="Eclipticon"
-            class="ca.uoit.eclipticon.gui.views.InstrumentationView"
+            class="ca.sqrlab.eclipticon.gui.views.InstrumentationView"
             id="eclipticon.views.InstrumentationView">
       </view>
    </extension>

@@ -1,0 +1,12 @@
+package ca.sqrlab.eclipticon.test.testfiles;
+
+import java.util.concurrent.*;
+
+import ca.sqrlab.eclipticon.instrumentation.*;
+
+public class test3 extends Object {
+
+	public void testing() throws InterruptedException, BrokenBarrierException {
+		new CyclicBarrier( 0 ).await();		new CountDownLatch( 2 ).countDown();
+	}
+}

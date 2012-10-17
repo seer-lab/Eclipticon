@@ -1,0 +1,16 @@
+package ca.sqrlab.eclipticon.test.testfiles;import java.util.Random;
+
+import java.util.concurrent.*;
+
+import ca.sqrlab.eclipticon.instrumentation.*;
+
+public class test4 extends Object {Random _____rand0123456789_____ = new Random();
+
+	public void testing() throws InterruptedException, BrokenBarrierException {
+		int a = 0;if((_____rand0123456789_____.nextInt(100-0)+0)<=1)try{Thread.sleep((_____rand0123456789_____.nextInt(111-11)+11));}catch(Exception _____e0123456789_____){}; int i = methodCall();
+	}
+	
+	synchronized public int methodCall() {
+		return 1;
+	}
+}

@@ -1,0 +1,16 @@
+package ca.sqrlab.eclipticon.test.testfiles;
+
+import java.util.concurrent.*;
+
+import ca.sqrlab.eclipticon.instrumentation.*;
+
+public class test2 extends Object {
+
+	public void testing() throws InterruptedException, BrokenBarrierException {
+		synchronized (new Object()){ synchronized (this){
+			int i = 0;
+			}
+		}
+		new CountDownLatch( 2 ).countDown();
+	}
+}

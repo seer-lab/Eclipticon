@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Eclipticon Instrumentation Points
-Bundle-SymbolicName: ca.uoit.eclipticon;singleton:=true
-Bundle-Version: 0.1
-Bundle-Activator: ca.uoit.eclipticon.gui.Activator
-Bundle-Vendor: UOIT
+Bundle-Name: Eclipticon
+Bundle-SymbolicName: ca.sqrlab.eclipticon;singleton:=true
+Bundle-Version: 0.1.0
+Bundle-Activator: ca.sqrlab.eclipticon.gui.Activator
+Bundle-Vendor: Software Quality Research Lab, UOIT
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jdt,
  org.eclipse.jdt.ui,
