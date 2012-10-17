@@ -77,7 +77,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test1.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test1.txt" ).getPath() ) );
 
 		// Find the interesting points
 		_fileParser.findInterestPoints( _sourceFile );
@@ -98,7 +98,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test2.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test2.txt" ).getPath() ) );
 
 		// Find the interesting points
 		_fileParser.findInterestPoints( _sourceFile );
@@ -120,7 +120,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test3.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test3.txt" ).getPath() ) );
 
 		// Find the interesting points
 		_fileParser.findInterestPoints( _sourceFile );
@@ -142,7 +142,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test4.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test4.txt" ).getPath() ) );
 		
 		// Run preParser
 		ArrayList<SourceFile> sources = new ArrayList<SourceFile>();
@@ -167,7 +167,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test5.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test5.txt" ).getPath() ) );
 
 		// Run preParser
 		ArrayList<SourceFile> sources = new ArrayList<SourceFile>();
@@ -192,7 +192,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test6.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test6.txt" ).getPath() ) );
 
 		// Run preParser
 		ArrayList<SourceFile> sources = new ArrayList<SourceFile>();
@@ -217,7 +217,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test7.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test7.txt" ).getPath() ) );
 
 		// Find the interesting points
 		_fileParser.findInterestPoints( _sourceFile );
@@ -236,7 +236,7 @@ public class FileParserTest extends TestCase {
 
 		// Set the source file up
 		_sourceFile = new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test8.txt" ).getPath() ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test8.txt" ).getPath() ) );
 
 		// Find the interesting points
 		_fileParser.findInterestPoints( _sourceFile );

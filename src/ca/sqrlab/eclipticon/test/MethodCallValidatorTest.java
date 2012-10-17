@@ -14,14 +14,14 @@ import ca.sqrlab.eclipticon.parsers.MethodCallValidator;
 public class MethodCallValidatorTest extends TestCase {
 
 	private MethodCallValidator	_methodValidator		= null;
-	private Path				_windowsMethodPath		= new Path( "\\eclipticon\\src\\ca\\uoit\\eclipticon\\test\\InstrumentationPointTest.java" );
-	private Path				_unixMethodPath			= new Path( "/eclipticon/src/ca/uoit/eclipticon/test/InstrumentationPointTest.java" );
-	private Path				_windowsMissMethodPath	= new Path( "\\eclipticon\\src\\ca\\uoit\\eclipticon\\Constants.java" );
-	private Path				_unixMissMethodPath		= new Path( "/eclipticon/src/ca/uoit/eclipticon/Constants.java" );
+	private Path				_windowsMethodPath		= new Path( "\\eclipticon\\src\\ca\\sqrlab\\eclipticon\\test\\InstrumentationPointTest.java" );
+	private Path				_unixMethodPath			= new Path( "/eclipticon/src/ca/sqrlab/eclipticon/test/InstrumentationPointTest.java" );
+	private Path				_windowsMissMethodPath	= new Path( "\\eclipticon\\src\\ca\\sqrlab\\eclipticon\\Constants.java" );
+	private Path				_unixMissMethodPath		= new Path( "/eclipticon/src/ca/sqrlab/eclipticon/Constants.java" );
 	private String				_import					= "import ca.sqrlab.eclipticon.instrumentation;\nimport ca.sqrlab.eclipticon.test;";
-	private String				_badFormattedImport		= "import   ca . uoit  .eclipticon.instrumentation   ;import ca.uoit .   eclipticon.test;";
+	private String				_badFormattedImport		= "import   ca . sqrlab  .eclipticon.instrumentation   ;import ca.sqrlab .   eclipticon.test;";
 	private String				_package				= "package ca.sqrlab.eclipticon.test;";
-	private String				_badFormattedPackage	= "package   ca . uoit  .eclipticon.test ;";
+	private String				_badFormattedPackage	= "package   ca . sqrlab  .eclipticon.test ;";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {

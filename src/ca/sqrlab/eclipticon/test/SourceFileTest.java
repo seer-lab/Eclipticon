@@ -18,8 +18,8 @@ public class SourceFileTest extends TestCase {
 	private SourceFile		_sourceFile			= null;
 	private InterestPoint	_interestingPoint	= new InterestPoint( 0, 0, Constants.SEMAPHORE, Constants.SEMAPHORE_ACQUIRE );
 	private String			_path				= null;
-	private String			_pathUnix			= "/eclipticon/src/ca/uoit/eclipticon/test/SourceFileTest.java";
-	private String			_pathWindows		= "\\eclipticon\\src\\ca\\uoit\\eclipticon\\test\\SourceFileTest.java";
+	private String			_pathUnix			= "/eclipticon/src/ca/sqrlab/eclipticon/test/SourceFileTest.java";
+	private String			_pathWindows		= "\\eclipticon\\src\\ca\\sqrlab\\eclipticon\\test\\SourceFileTest.java";
 	private String			_name				= "SourceFileTest.java";
 	private String			_imports			= "package ca.sqrlab.eclipticon.test;\n\nimport ca.sqrlab.eclipticon.instrumentation;\nimport ca.sqrlab.eclipticon.test;";
 

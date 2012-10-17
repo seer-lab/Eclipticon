@@ -58,7 +58,7 @@ public class PreParserTest extends TestCase {
 		
 		// Set the source file up
 		_sources.add( new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test1.txt" ).getPath() ) ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test1.txt" ).getPath() ) ) );
 		
 		// Find the synchronized methods
 		_preParser.findSynchronizedMethods( _sources );
@@ -71,14 +71,14 @@ public class PreParserTest extends TestCase {
 		
 		// Set the source file up
 		_sources.add( new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test4.txt" ).getPath() ) ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test4.txt" ).getPath() ) ) );
 		
 		// Find the synchronized methods
 		_preParser.findSynchronizedMethods( _sources );
 
 		// Create expected results
 		_actualSyncMethods.add( _preParser.new SynchronizedMethods( "methodCall", new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test4.txt" ).getPath() )));
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test4.txt" ).getPath() )));
 		
 		// Compare actual vs expected
 		compareResults();
@@ -89,16 +89,16 @@ public class PreParserTest extends TestCase {
 		
 		// Set the source file up
 		_sources.add( new SourceFile( new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test6.txt" ).getPath() ) ) );
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test6.txt" ).getPath() ) ) );
 		
 		// Find the synchronized methods
 		_preParser.findSynchronizedMethods( _sources );
 
 		// Create expected results
 		_actualSyncMethods.add( _preParser.new SynchronizedMethods( "methodCall", new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test6.txt" ).getPath() )));
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test6.txt" ).getPath() )));
 		_actualSyncMethods.add( _preParser.new SynchronizedMethods( "methodCall2", new Path( new File( System.getProperty( "user.dir" )
-				+ "/src/ca/uoit/eclipticon/test/testfiles/test6.txt" ).getPath() )));
+				+ "/src/ca/sqrlab/eclipticon/test/testfiles/test6.txt" ).getPath() )));
 		
 		// Compare actual vs expected
 		compareResults();
