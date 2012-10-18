@@ -3,6 +3,8 @@ Eclipticon is a testing and development software tool to help users optimize for
 
 The user can specify these instrumentation points either manually or automatically. The automatic generation of these test areas will be random, though following some user‐adjustable configurations. The testing will occur by inserting thread delays that will cause the newly instrumented code to explore a larger set of thread interleavings.
 
+[A poster describing Eclipticon](https://github.com/downloads/sqrlab/eclipticon/eclipticon_poster.pdf)
+
 # Installation
 This plugin is compatible with Eclipse Juno (4.2). Two approaches for installation are describe below:
 
