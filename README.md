@@ -11,7 +11,7 @@ This plugin is compatible with Eclipse Juno (4.2). Two approaches for installati
 ## Update Site (Prefered)
 1. Within Eclipse go 'Help' then 'Install New Software'.
 2. Add Update Site by clicking 'Add...'.
-3. Input 'Eclipticon' for name, and '[http://sqrlab.ca/eclipticon-update/](http://sqrlab.ca/eclipticon-update/)' for location.
+3. Input 'Eclipticon' for name, and '[http://sqrlab.science.uoit.ca/eclipticon/](http://sqrlab.science.uoit.ca/eclipticon/)' for location.
 4. Select the 'Eclipticon' feature and proceed to install by pressing 'Next'.
 
 ## From Source (Development)
